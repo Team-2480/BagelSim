@@ -1,28 +1,42 @@
 #include "raylib.h"
 
-int main()
-{
+int main() {
   const int screenWidth = 800;
-    const int screenHeight = 450;
+  const int screenHeight = 450;
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+  InitWindow(screenWidth, screenHeight, "EvilAwesomeBagleSimulator");
 
-    SetTargetFPS(60);
+  Camera3D camera = {0};
+  camera.position = (Vector3){10.0f, 10.0f, 10.0f}; // Camera position
+  camera.target = (Vector3){0.0f, 0.0f, 0.0f};      // Camera looking at point
+  camera.up =
+      (Vector3){0.0f, 1.0f, 0.0f}; // Camera up vector (rotation towards target)
+  camera.fovy = 45.0f;             // Camera field-of-view Y
+  camera.projection = CAMERA_PERSPECTIVE; // Camera projection type
 
-    while (!WindowShouldClose())    
-    {
-        BeginDrawing();
+  DisableCursor();
 
-            ClearBackground(RAYWHITE);
+  SetTargetFPS(60);
 
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+  while (!WindowShouldClose()) {
+    UpdateCamera(&camera, CAMERA_FREE);
 
-        EndDrawing();
-    }
+    BeginDrawing();
 
-    CloseWindow();        
+    ClearBackground(RAYWHITE);
+    
+    BeginMode3D(camera);
+    DrawGrid(10, 1.0f);
 
+    EndMode3D();
 
+    // DrawText("Congrats! You created your first window!", 190, 200, 20,
+    //          LIGHTGRAY);
 
-    return 0;
+    EndDrawing();
+  }
+
+  CloseWindow();
+
+  return 0;
 }
