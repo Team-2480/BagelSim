@@ -37,6 +37,8 @@ int main() {
   while (!WindowShouldClose()) {
     controller_info.step();
 
+    // printf("%f\n", controller_info.gamepad_right_trigger);
+
     UpdateCamera(&camera, CAMERA_FREE);
 
     BeginDrawing();
@@ -47,6 +49,8 @@ int main() {
 
     DrawModel(model, {}, 1.0f, WHITE);
     DrawGrid(10, 1.0f);
+
+    DrawCube({0.0f, 1.0f, 0.0f}, 2.0f, 2.0f, 2.0f, GREEN);
 
     EndMode3D();
 
