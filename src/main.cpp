@@ -52,7 +52,7 @@ int main() {
   }
 
   float robot_rot = 0;
-  Vector3 robot_pos = {0, 0, 0};
+  Vector3 robot_pos = {0, 0.1, 0};
 
   DisableCursor();
 
@@ -79,6 +79,7 @@ int main() {
     DrawModel(model, {}, 1.0f, WHITE);
 
     robot_rot -= controller_info.joystick_axis[2];
+<<<<<<< HEAD
     
     robot_pos.x += controller_info.joystick_axis[0];
     robot_pos.z += controller_info.joystick_axis[1];
@@ -88,10 +89,17 @@ int main() {
                                                    cos(robot_rot * DEG2RAD)},
                                                   0.1));
                                                   */
+=======
+
+    robot_pos = Vector3Add(robot_pos, Vector3Scale({sin(robot_rot * DEG2RAD), 0,
+                                                    cos(robot_rot * DEG2RAD)},
+                                                   0.1));
+>>>>>>> refs/remotes/origin/main
 
     rlPushMatrix();
+    rlTranslatef(robot_pos.x, robot_pos.y, robot_pos.z);
     rlRotatef(robot_rot, 0.0f, 1.0f, 0.0f);
-    DrawCubeV(robot_pos, {0.794f, 0.2f, 0.940f}, GREEN);
+    DrawCubeV({0.0, 0.0, 0.0}, {0.794f, 0.2f, 0.940f}, GREEN);
     rlPopMatrix();
 
     EndShaderMode();
