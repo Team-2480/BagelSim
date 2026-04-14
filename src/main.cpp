@@ -4,8 +4,10 @@
 
 #include "control.h"
 #include "raylib.h"
-#include "rlgl.h"
 #include "raymath.h"
+#include "rlgl.h"
+#define RLIGHTS_IMPLEMENTATION
+#include "rlights.h"
 
 #define GLSL_VERSION 330
 
@@ -24,17 +26,33 @@ int main() {
   camera.fovy = 45.0f;          // Camera field-of-view Y
   camera.projection = CAMERA_PERSPECTIVE;  // Camera projection type
 
-  Shader shader = LoadShader(
-      TextFormat("resources/shaders/glsl%i/lighting_instancing.vs",
-                 GLSL_VERSION),
-      TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
+  Shader shader =
+      LoadShader(TextFormat("../release/lighting.vs", GLSL_VERSION),
+                 TextFormat("../release/lighting.fs", GLSL_VERSION));
+
+  shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
+
+  int ambientLoc = GetShaderLocation(shader, "ambient");
+  SetShaderValue(shader, ambientLoc, (float[4]){0.1f, 0.1f, 0.1f, 1.0f},
+                 SHADER_UNIFORM_VEC4);
+
+  Light lights[MAX_LIGHTS] = {0};
+  lights[0] = CreateLight(LIGHT_POINT, (Vector3){0, 4, -4}, Vector3Zero(),
+                          Color{50, 50, 50, 50}, shader);
+  lights[1] = CreateLight(LIGHT_POINT, (Vector3){0, 4, 4}, Vector3Zero(),
+                          Color{50, 50, 50, 50}, shader);
+  lights[2] = CreateLight(LIGHT_POINT, (Vector3){-10, 4, 0}, Vector3Zero(),
+                          Color{50, 50, 50, 50}, shader);
+  lights[3] = CreateLight(LIGHT_POINT, (Vector3){10, 4, 0}, Vector3Zero(),
+                          Color{50, 50, 50, 50}, shader);
 
   Model model = LoadModel("../release/rebuilt.gltf");
-  Texture2D texture = LoadTexture("../release/rebuilt.gltf");
-  model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+  for (size_t i = 0; i < model.materialCount; i++) {
+    model.materials[i].shader = shader;
+  }
 
   float robot_rot = 0;
-  Vector3 robot_pos = {0,0,0};
+  Vector3 robot_pos = {0, 0, 0};
 
   DisableCursor();
 
@@ -45,23 +63,34 @@ int main() {
 
     UpdateCamera(&camera, CAMERA_FREE);
 
+    float cameraPos[3] = {camera.position.x, camera.position.y,
+                          camera.position.z};
+    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos,
+                   SHADER_UNIFORM_VEC3);
+
     BeginDrawing();
 
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
 
     BeginMode3D(camera);
+
+    BeginShaderMode(shader);
 
     DrawModel(model, {}, 1.0f, WHITE);
 
     robot_rot -= controller_info.joystick_axis[2];
-    robot_pos= Vector3Add(robot_pos, Vector3Scale({sin(robot_rot * DEG2RAD), 0, cos(robot_rot * DEG2RAD)}, 0.1));
-    
+    /*
+   robot_pos = Vector3Add(robot_pos, Vector3Scale({sin(robot_rot * DEG2RAD), 0,
+                                                   cos(robot_rot * DEG2RAD)},
+                                                  0.1));
+                                                  */
+
     rlPushMatrix();
     rlRotatef(robot_rot, 0.0f, 1.0f, 0.0f);
     DrawCubeV(robot_pos, {0.794f, 0.2f, 0.940f}, GREEN);
     rlPopMatrix();
 
-
+    EndShaderMode();
     EndMode3D();
 
     EndDrawing();
