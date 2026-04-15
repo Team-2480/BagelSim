@@ -93,15 +93,16 @@ int main() {
     if (!(controller_info.joystick_axis[2] >= -0.2 &&
           controller_info.joystick_axis[2] <= 0.2)) {
 
-      robot_rot -= controller_info.joystick_axis[2] * 5;
+      robot_rot -= controller_info.joystick_axis[2] * 6;
     }
 
+    if (controller_info.joystick_inputs[4]) {
+      robot_pos.y += 0.1;
+      // printf("fly\n");
+    }
     if (controller_info.joystick_inputs[5]) {
-      robot_pos.y += 5;
-      printf("fly\n");
-    } else if (controller_info.joystick_inputs[6]) {
-      robot_pos.y -= 5;
-      printf("no fly\n");
+      robot_pos.y -= 0.1;
+      // printf("no fly\n");
     }
 
     /*
