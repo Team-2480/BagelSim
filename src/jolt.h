@@ -4,6 +4,7 @@
 
 #include "Jolt/Physics/Body/BodyInterface.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
+#include "Jolt/Physics/EPhysicsUpdateError.h"
 #include "raylib.h"
 
 // Jolt includes
@@ -144,10 +145,10 @@ class JoltWrapper {
   JPH::TempAllocatorImpl temp_allocator;
   JPH::JobSystemThreadPool job_system;
 
-  const uint max_bodies = 1024 * 10;
+  const uint max_bodies = 200;
   const uint num_body_mutexes = 0;
-  const uint max_body_pairs = 1024 * 10;
-  const uint max_contact_constraints = 1024 * 10;
+  const uint max_body_pairs = 200;
+  const uint max_contact_constraints = 200;
   BPLayerInterfaceImpl broad_phase_layer_interface;
   JPH::ObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
   ObjectLayerPairFilterImpl object_vs_object_layer_filter;
@@ -182,10 +183,10 @@ class JoltWrapper {
     }
 
     JPH::TriangleList tri_list;
-    int triangle_count = convex_model.meshes[0].vertexCount / 3;
 
     // Test against all triangles in mesh
     for (size_t mesh = 0; mesh < convex_model.meshCount; mesh++) {
+      int triangle_count = convex_model.meshes[mesh].vertexCount / 3;
       for (int i = 0; i < triangle_count; i++) {
         Vector3 a, b, c;
         Vector2 u1, u2, u3;
@@ -236,24 +237,29 @@ class JoltWrapper {
     return physics_system.GetBodyInterface();
   }
   void update() {
-    const float delta_time = 1.0f / 60.0f;
+    const float delta_time = 1.0f / 30.0f;
 
     auto errors =
-        physics_system.Update(delta_time, 1, &temp_allocator, &job_system);
+        physics_system.Update(delta_time, 5, &temp_allocator, &job_system);
+
+    if (errors != JPH::EPhysicsUpdateError::None) {
+      // whoops ig
+    }
   }
 
   std::vector<JPH::BodyID> balls;
 
   void make_ball() {
     JPH::BodyCreationSettings sphere_settings(
-        new JPH::SphereShape(0.14986f),
-        JPH::RVec3((float)(rand() % 10000) / 10000 * 16 - 8.0_r, 2.0_r,
-                   (float)(rand() % 10000) / 10000 * 8 - 4.0_r),
+        new JPH::SphereShape(0.15f),
+        JPH::RVec3((float)(rand() % 10000) / 10000 * 8 - 4.0_r, 2.0_r,
+                   (float)(rand() % 10000) / 10000 * 4 - 2.0_r),
         JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, Layers::MOVING);
     JPH::BodyID sphere_id = get_interface().CreateAndAddBody(
         sphere_settings, JPH::EActivation::Activate);
     get_interface().SetLinearAndAngularVelocity(
         sphere_id, JPH::Vec3(0.0f, 0.0f, 0.0f), JPH::RVec3(0.0_r, 0.0f, 0.0f));
+    get_interface().SetFriction(sphere_id, 0.3);
     balls.push_back(sphere_id);
   }
 

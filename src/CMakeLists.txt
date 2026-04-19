@@ -2,6 +2,9 @@ add_executable(bagelsim
  main.cpp
 )
 
+target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic )
+target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic )
+
 include(FetchContent)
 
 FetchContent_Declare(

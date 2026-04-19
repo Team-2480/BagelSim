@@ -17,12 +17,14 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <format>
 #include <iostream>
 #include <print>
 #include <ranges>
 
 #include "Jolt/Geometry/Triangle.h"
 #include "Jolt/Math/Float3.h"
+#include "Jolt/Math/Vec3.h"
 #include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "Jolt/Physics/Collision/Shape/Shape.h"
 #include "control.h"
@@ -37,6 +39,39 @@
 
 using namespace JPH::literals;
 
+constexpr float CONTROLER_DEADBAND = 0.01;
+
+std::array<Camera, 4> camera_perspectives = {
+
+    Camera3D{
+        .position = Vector3{0.0f, 5.0f, 5.0f},
+        .target = Vector3{0.0f, 0.0f, 0.0f},
+        .up = Vector3{0.0f, 1.0f, 0.0f},
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    },
+    Camera3D{
+        .position = Vector3{9.0f, 1.5f, 3.0f},
+        .target = Vector3{0.0f, 1.0f, 0.0f},
+        .up = Vector3{0.0f, 1.0f, 0.0f},
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    },
+    Camera3D{
+        .position = Vector3{9.0f, 1.5f, 1.0f},
+        .target = Vector3{0.0f, 1.0f, 0.0f},
+        .up = Vector3{0.0f, 1.0f, 0.0f},
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    },
+    Camera3D{
+        .position = Vector3{9.0f, 1.5f, -2.0f},
+        .target = Vector3{0.0f, 1.0f, 0.0f},
+        .up = Vector3{0.0f, 1.0f, 0.0f},
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    }};
+
 int main() {
   GamepadControlProxy controller_info;
   const int screenWidth = 800;
@@ -44,12 +79,12 @@ int main() {
 
   InitWindow(screenWidth, screenHeight, "EvilAwesomeBagelSimulator");
 
-  Camera3D camera = {0};
-  camera.position = (Vector3){10.0f, 10.0f, 10.0f};  // Camera position
-  camera.target = (Vector3){0.0f, 0.0f, 0.0f};       // Camera looking at point
-  camera.up = (Vector3){0.0f, 1.0f,
-                        0.0f};  // Camera up vector (rotation towards target)
-  camera.fovy = 45.0f;          // Camera field-of-view Y
+  Camera3D camera;
+  camera.position = Vector3{0.0f, 5.0f, 5.0f};  // Camera position
+  camera.target = Vector3{0.0f, 0.0f, 0.0f};    // Camera looking at point
+  camera.up =
+      Vector3{0.0f, 1.0f, 0.0f};  // Camera up vector (rotation towards target)
+  camera.fovy = 90.0f;            // Camera field-of-view Y
   camera.projection = CAMERA_PERSPECTIVE;  // Camera projection type
 
   Shader shader =
@@ -59,7 +94,7 @@ int main() {
   shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
 
   int ambientLoc = GetShaderLocation(shader, "ambient");
-  SetShaderValue(shader, ambientLoc, (float[4]){0.1f, 0.1f, 0.1f, 1.0f},
+  SetShaderValue(shader, ambientLoc, (float[]){0.1f, 0.1f, 0.1f, 1.0f},
                  SHADER_UNIFORM_VEC4);
 
   Light lights[MAX_LIGHTS] = {0};
@@ -77,33 +112,95 @@ int main() {
     model.materials[i].shader = shader;
   }
 
-  Model sphere_model = LoadModelFromMesh(GenMeshSphere(0.14986f, 20, 20));
+  Model sphere_model = LoadModelFromMesh(GenMeshSphere(0.15f, 20, 20));
   for (size_t i = 0; i < sphere_model.materialCount; i++) {
     sphere_model.materials[i].shader = shader;
   }
 
-  float robot_rot = 0;
-  Vector3 robot_pos = {0, 0.1, 0};
-
   DisableCursor();
 
-  SetTargetFPS(60);
+  SetTargetFPS(30);
 
   JoltWrapper::init();
   JoltWrapper jolt(shader);
 
   /// sphere stuff
+  for (size_t i = 0; i < 100; i++) {
+    jolt.make_ball();
+  }
+
+  JPH::BodyCreationSettings player_settings(
+      new JPH::BoxShape(JPH::RVec3(0.794f / 2, 0.2f / 2, 0.940f / 2)),
+      JPH::RVec3(0, 1, 0), JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic,
+      Layers::MOVING);
+
+  JPH::MassProperties msp;
+  msp.ScaleToMass(100.0f);
+
+  player_settings.mMassPropertiesOverride = msp;
+  player_settings.mOverrideMassProperties =
+      JPH::EOverrideMassProperties::CalculateInertia;
+
+  JPH::BodyID player_id = jolt.get_interface().CreateAndAddBody(
+      player_settings, JPH::EActivation::Activate);
+  jolt.get_interface().SetMaxLinearVelocity(player_id, 5);
+  jolt.get_interface().SetMaxAngularVelocity(player_id, 5);
+  jolt.get_interface().SetFriction(player_id, 5);
+
+  bool global_local = true;
+  float default_rot = 0;
 
   jolt.physics_system.OptimizeBroadPhase();
 
   bool debug = false;
+  size_t camera_index = 0;
   while (!WindowShouldClose()) {
-    jolt.make_ball();
-
     controller_info.step();
     jolt.update();
+    auto player_pos = jolt.get_interface().GetPosition(player_id);
+    auto player_rot = jolt.get_interface().GetRotation(player_id);
+    auto player_real_ang_rot =
+        jolt.get_interface().GetAngularVelocity(player_id);
+    auto player_real_velocity =
+        jolt.get_interface().GetLinearVelocity(player_id);
 
-    UpdateCamera(&camera, CAMERA_FREE);
+    JPH::Vec3 axis;
+    float angle;
+    player_rot.GetAxisAngle(axis, angle);
+
+    JPH::Vec3 euler_angles = player_rot.GetEulerAngles();
+
+    if (IsKeyPressed(KEY_ONE)) {
+      camera_index = 0;
+    } else if (IsKeyPressed(KEY_TWO)) {
+      camera_index = 1;
+    } else if (IsKeyPressed(KEY_THREE)) {
+      camera_index = 2;
+    } else if (IsKeyPressed(KEY_FOUR)) {
+      camera_index = 3;
+    } else if (IsKeyPressed(KEY_ZERO)) {
+      camera_index = 10;
+    }
+
+    if (camera_index < camera_perspectives.size()) {
+      camera = camera_perspectives[camera_index];
+    } else {
+      auto forward = Vector3RotateByAxisAngle(
+          Vector3RotateByAxisAngle(
+              {0, 0, -1}, {axis.GetX(), axis.GetY(), axis.GetZ()}, angle),
+          {0, 1, 0}, default_rot);
+
+      auto pos = Vector3{player_pos.GetX(), player_pos.GetY() + 0.3f,
+                         player_pos.GetZ()};
+
+      camera = Camera3D{
+          .position = pos,
+          .target = Vector3Add(pos, forward),
+          .up = Vector3{0.0f, 1.0f, 0.0f},
+          .fovy = 100.0f,
+          .projection = CAMERA_PERSPECTIVE,
+      };
+    }
 
     float cameraPos[3] = {camera.position.x, camera.position.y,
                           camera.position.z};
@@ -127,43 +224,53 @@ int main() {
     else
       DrawModel(jolt.convex_model, {}, 1.0f, WHITE);
 
-    if (!(controller_info.joystick_axis[0] >= -0.1 &&
-          controller_info.joystick_axis[0] <= 0.1)) {
-
-      robot_pos.x += controller_info.joystick_axis[0] / 2;
+    Vector3 player_velocity = Vector3Zero();
+    float player_rot_velocity = 0;
+    if (std::abs(controller_info.joystick_axis[0]) > CONTROLER_DEADBAND) {
+      player_velocity.x += std::pow(controller_info.joystick_axis[0], 3.0) * 5;
     }
 
-    if (!(controller_info.joystick_axis[1] >= -0.1 &&
-          controller_info.joystick_axis[1] <= 0.1)) {
-
-      robot_pos.z += controller_info.joystick_axis[1] / 2;
+    if (std::abs(controller_info.joystick_axis[1]) > CONTROLER_DEADBAND) {
+      player_velocity.z += std::pow(controller_info.joystick_axis[1], 3.0) * 5;
     }
 
-    if (!(controller_info.joystick_axis[2] >= -0.2 &&
-          controller_info.joystick_axis[2] <= 0.2)) {
-
-      robot_rot -= controller_info.joystick_axis[2] * 6;
+    if (std::abs(controller_info.joystick_axis[2]) > CONTROLER_DEADBAND) {
+      player_rot_velocity -=
+          std::pow(controller_info.joystick_axis[2], 3.0) * 3;
     }
 
-    if (controller_info.joystick_inputs[4]) {
-      robot_pos.y += 0.1;
-      // printf("fly\n");
-    }
-    if (controller_info.joystick_inputs[5]) {
-      robot_pos.y -= 0.1;
-      // printf("no fly\n");
+    if (controller_info.joystick_inputs[4] &&
+        !controller_info.last_joystick_inputs[4]) {
+      global_local = !global_local;
     }
 
-    /*
-   robot_pos = Vector3Add(robot_pos, Vector3Scale({sin(robot_rot * DEG2RAD), 0,
-                                                   cos(robot_rot * DEG2RAD)},
-                                                  0.1));
-                                                  */
+    if (controller_info.joystick_inputs[11]) {
+      default_rot = angle;
+    }
+
+    if (global_local) {
+      player_velocity = Vector3RotateByAxisAngle(
+          player_velocity, {axis.GetX(), axis.GetY(), axis.GetZ()}, angle);
+    } else {
+      player_velocity =
+          Vector3RotateByAxisAngle(player_velocity, {0, 1, 0}, default_rot);
+    }
+
+    jolt.get_interface().AddLinearAndAngularVelocity(
+        player_id,
+        {player_velocity.x - player_real_velocity.GetX() * 0.1f, 0,
+         player_velocity.z - player_real_velocity.GetZ() * 0.1f},
+        JPH::Vec3{-player_real_ang_rot.GetX() * 0.01f,
+                  player_rot_velocity - player_real_ang_rot.GetY() * 0.01f,
+                  -player_real_ang_rot.GetZ() * 0.01f});
 
     rlPushMatrix();
-    rlTranslatef(robot_pos.x, robot_pos.y, robot_pos.z);
-    rlRotatef(robot_rot, 0.0f, 1.0f, 0.0f);
-    DrawCubeV({0.0, 0.0, 0.0}, {0.794f, 0.2f, 0.940f}, GREEN);
+    rlTranslatef(player_pos.GetX(), player_pos.GetY(), player_pos.GetZ());
+
+    rlRotatef(angle * RAD2DEG, axis.GetX(), axis.GetY(), axis.GetZ());
+
+    DrawCubeV({0.0, 0.0, 0.0}, {0.794f, 0.2f, 0.940f},
+              global_local ? GREEN : RED);
     rlPopMatrix();
 
     auto balls = jolt.get_ball_positions();
@@ -177,6 +284,8 @@ int main() {
 
     EndShaderMode();
     EndMode3D();
+
+    DrawFPS(10, 10);
 
     EndDrawing();
   }
