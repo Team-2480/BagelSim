@@ -1,9 +1,12 @@
 add_executable(bagelsim
  main.cpp
+ jolt.cpp
+ control.cpp
+ swerve.cpp
 )
 
-target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic )
-target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic )
+target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
+target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
 
 include(FetchContent)
 
@@ -20,7 +23,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(jolt)
 
-target_link_libraries(bagelsim PUBLIC raylib glfw Jolt)
+FetchContent_Declare(
+    eigen
+    URL https://gitlab.com/libeigen/eigen/-/archive/5.0.1/eigen-5.0.1.tar.gz
+)
+
+FetchContent_MakeAvailable(eigen)
+
+target_link_libraries(bagelsim PUBLIC raylib glfw Jolt Eigen3::Eigen)
 
 add_custom_command(TARGET bagelsim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy

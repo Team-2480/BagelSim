@@ -1,11 +1,11 @@
-
 #include <Jolt/Jolt.h>
+// jolt must be first
 
-// Jolt includes
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/JobSystemThreadPool.h>
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Math/Real.h>
+#include <Jolt/Math/Vec3.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -17,16 +17,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <format>
-#include <iostream>
-#include <print>
-#include <ranges>
 
-#include "Jolt/Geometry/Triangle.h"
-#include "Jolt/Math/Float3.h"
-#include "Jolt/Math/Vec3.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
-#include "Jolt/Physics/Collision/Shape/Shape.h"
+#include "config.h"
 #include "control.h"
 #include "jolt.h"
 #include "raylib.h"
@@ -34,6 +26,7 @@
 #include "rlgl.h"
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
+#include "swerve.h"
 
 #define GLSL_VERSION 330
 
@@ -94,26 +87,26 @@ int main() {
   shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
 
   int ambientLoc = GetShaderLocation(shader, "ambient");
-  SetShaderValue(shader, ambientLoc, (float[]){0.1f, 0.1f, 0.1f, 1.0f},
-                 SHADER_UNIFORM_VEC4);
+  float ambient_lighting[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+  SetShaderValue(shader, ambientLoc, ambient_lighting, SHADER_UNIFORM_VEC4);
 
-  Light lights[MAX_LIGHTS] = {0};
-  lights[0] = CreateLight(LIGHT_POINT, (Vector3){0, 4, -4}, Vector3Zero(),
+  Light lights[MAX_LIGHTS];
+  lights[0] = CreateLight(LIGHT_POINT, Vector3{0, 4, -4}, Vector3Zero(),
                           Color{50, 50, 50, 50}, shader);
-  lights[1] = CreateLight(LIGHT_POINT, (Vector3){0, 4, 4}, Vector3Zero(),
+  lights[1] = CreateLight(LIGHT_POINT, Vector3{0, 4, 4}, Vector3Zero(),
                           Color{50, 50, 50, 50}, shader);
-  lights[2] = CreateLight(LIGHT_POINT, (Vector3){-10, 4, 0}, Vector3Zero(),
+  lights[2] = CreateLight(LIGHT_POINT, Vector3{-10, 4, 0}, Vector3Zero(),
                           Color{50, 50, 50, 50}, shader);
-  lights[3] = CreateLight(LIGHT_POINT, (Vector3){10, 4, 0}, Vector3Zero(),
+  lights[3] = CreateLight(LIGHT_POINT, Vector3{10, 4, 0}, Vector3Zero(),
                           Color{50, 50, 50, 50}, shader);
 
   Model model = LoadModel("../release/rebuilt.gltf");
-  for (size_t i = 0; i < model.materialCount; i++) {
+  for (int i = 0; i < model.materialCount; i++) {
     model.materials[i].shader = shader;
   }
 
   Model sphere_model = LoadModelFromMesh(GenMeshSphere(0.15f, 20, 20));
-  for (size_t i = 0; i < sphere_model.materialCount; i++) {
+  for (int i = 0; i < sphere_model.materialCount; i++) {
     sphere_model.materials[i].shader = shader;
   }
 
@@ -130,7 +123,9 @@ int main() {
   }
 
   JPH::BodyCreationSettings player_settings(
-      new JPH::BoxShape(JPH::RVec3(0.794f / 2, 0.2f / 2, 0.940f / 2)),
+      new JPH::BoxShape(JPH::RVec3(Constants::ROBOT_SIZE.x / 2,
+                                   Constants::ROBOT_SIZE.y / 2,
+                                   Constants::ROBOT_SIZE.z / 2)),
       JPH::RVec3(0, 1, 0), JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic,
       Layers::MOVING);
 
@@ -145,7 +140,14 @@ int main() {
       player_settings, JPH::EActivation::Activate);
   jolt.get_interface().SetMaxLinearVelocity(player_id, 5);
   jolt.get_interface().SetMaxAngularVelocity(player_id, 5);
-  jolt.get_interface().SetFriction(player_id, 5);
+  jolt.get_interface().SetFriction(player_id, 2);
+  std::array<float, 4> module_headings = {0, 0, 0, 0};
+
+  auto wheel_mesh = GenMeshCylinder(0.1, 0.1, 10);
+  auto wheel_model = LoadModelFromMesh(wheel_mesh);
+  for (int i = 0; i < wheel_model.materialCount; i++) {
+    wheel_model.materials[i].shader = shader;
+  }
 
   bool global_local = true;
   float default_rot = 0;
@@ -168,8 +170,6 @@ int main() {
     float angle;
     player_rot.GetAxisAngle(axis, angle);
 
-    JPH::Vec3 euler_angles = player_rot.GetEulerAngles();
-
     if (IsKeyPressed(KEY_ONE)) {
       camera_index = 0;
     } else if (IsKeyPressed(KEY_TWO)) {
@@ -178,13 +178,15 @@ int main() {
       camera_index = 2;
     } else if (IsKeyPressed(KEY_FOUR)) {
       camera_index = 3;
+    } else if (IsKeyPressed(KEY_NINE)) {
+      camera_index = 11;
     } else if (IsKeyPressed(KEY_ZERO)) {
       camera_index = 10;
     }
 
     if (camera_index < camera_perspectives.size()) {
       camera = camera_perspectives[camera_index];
-    } else {
+    } else if (camera_index == 10) {
       auto forward = Vector3RotateByAxisAngle(
           Vector3RotateByAxisAngle(
               {0, 0, -1}, {axis.GetX(), axis.GetY(), axis.GetZ()}, angle),
@@ -200,6 +202,13 @@ int main() {
           .fovy = 100.0f,
           .projection = CAMERA_PERSPECTIVE,
       };
+    }
+
+    if (camera_index == 11) {
+      UpdateCamera(&camera, CAMERA_FREE);
+      controller_info.keyboard_overide = false;
+    } else {
+      controller_info.keyboard_overide = true;
     }
 
     float cameraPos[3] = {camera.position.x, camera.position.y,
@@ -248,18 +257,19 @@ int main() {
       default_rot = angle;
     }
 
+    Vector3 corrected_player_velocity;
     if (global_local) {
-      player_velocity = Vector3RotateByAxisAngle(
+      corrected_player_velocity = Vector3RotateByAxisAngle(
           player_velocity, {axis.GetX(), axis.GetY(), axis.GetZ()}, angle);
     } else {
-      player_velocity =
+      corrected_player_velocity =
           Vector3RotateByAxisAngle(player_velocity, {0, 1, 0}, default_rot);
     }
 
     jolt.get_interface().AddLinearAndAngularVelocity(
         player_id,
-        {player_velocity.x - player_real_velocity.GetX() * 0.1f, 0,
-         player_velocity.z - player_real_velocity.GetZ() * 0.1f},
+        {corrected_player_velocity.x - player_real_velocity.GetX() * 0.1f, 0,
+         corrected_player_velocity.z - player_real_velocity.GetZ() * 0.1f},
         JPH::Vec3{-player_real_ang_rot.GetX() * 0.01f,
                   player_rot_velocity - player_real_ang_rot.GetY() * 0.01f,
                   -player_real_ang_rot.GetZ() * 0.01f});
@@ -269,18 +279,34 @@ int main() {
 
     rlRotatef(angle * RAD2DEG, axis.GetX(), axis.GetY(), axis.GetZ());
 
-    DrawCubeV({0.0, 0.0, 0.0}, {0.794f, 0.2f, 0.940f},
+    DrawCubeV({0.0, 0.2, 0.0}, Constants::ROBOT_SIZE,
               global_local ? GREEN : RED);
     rlPopMatrix();
+
+    auto modules = calculate_swerve_states(
+        ChassisSpeeds{{player_velocity.x, player_velocity.z},
+                      player_rot_velocity},
+        module_headings);
+
+    for (int i = 0; i < 4; i++) {
+      rlPushMatrix();
+
+      rlTranslatef(player_pos.GetX(), 0, player_pos.GetZ());
+      rlRotatef(angle * RAD2DEG, axis.GetX(), axis.GetY(), axis.GetZ());
+      rlTranslatef(modules_positions[i].x, 0.1, modules_positions[i].y);
+      rlRotatef(modules[i].rot * RAD2DEG, 0, 1, 0);
+      rlRotatef(90, 0, 0, -1);
+      rlTranslatef(0, -0.1 + 0.1 / 2, 0);
+
+      DrawModel(wheel_model, {0, 0, 0}, 1, RED);
+
+      rlPopMatrix();
+    }
 
     auto balls = jolt.get_ball_positions();
     for (auto ball : balls) {
       DrawModel(sphere_model, ball, 1.0f, YELLOW);
     }
-    /*
-    DrawSphere(
-      {position.GetX(), position.GetY(), position.GetZ()}, 0.14986f, GREEN);
-      */
 
     EndShaderMode();
     EndMode3D();

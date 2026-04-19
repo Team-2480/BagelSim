@@ -3,8 +3,6 @@
 #include <Jolt/Jolt.h>
 
 #include "Jolt/Physics/Body/BodyInterface.h"
-#include "Jolt/Physics/Collision/Shape/MeshShape.h"
-#include "Jolt/Physics/EPhysicsUpdateError.h"
 #include "raylib.h"
 
 // Jolt includes
@@ -19,9 +17,6 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
 
-#include <cstdlib>
-#include <iostream>
-
 using namespace JPH::literals;
 
 namespace Layers {
@@ -33,17 +28,7 @@ static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
 class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
  public:
   virtual bool ShouldCollide(JPH::ObjectLayer inObject1,
-                             JPH::ObjectLayer inObject2) const override {
-    switch (inObject1) {
-      case Layers::NON_MOVING:
-        return inObject2 == Layers::MOVING;
-      case Layers::MOVING:
-        return true;
-      default:
-        JPH_ASSERT(false);
-        return false;
-    }
-  }
+                             JPH::ObjectLayer inObject2) const override;
 };
 
 namespace BroadPhaseLayers {
@@ -54,20 +39,12 @@ static constexpr uint NUM_LAYERS(2);
 
 class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface {
  public:
-  BPLayerInterfaceImpl() {
-    mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-    mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
-  }
+  BPLayerInterfaceImpl();
 
-  virtual uint GetNumBroadPhaseLayers() const override {
-    return BroadPhaseLayers::NUM_LAYERS;
-  }
+  virtual uint GetNumBroadPhaseLayers() const override;
 
   virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(
-      JPH::ObjectLayer inLayer) const override {
-    JPH_ASSERT(inLayer < Layers::NUM_LAYERS);
-    return mObjectToBroadPhase[inLayer];
-  }
+      JPH::ObjectLayer inLayer) const override;
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
   virtual const char* GetBroadPhaseLayerName(
@@ -92,17 +69,7 @@ class ObjectVsBroadPhaseLayerFilterImpl
     : public JPH::ObjectVsBroadPhaseLayerFilter {
  public:
   virtual bool ShouldCollide(JPH::ObjectLayer inLayer1,
-                             JPH::BroadPhaseLayer inLayer2) const override {
-    switch (inLayer1) {
-      case Layers::NON_MOVING:
-        return inLayer2 == BroadPhaseLayers::MOVING;
-      case Layers::MOVING:
-        return true;
-      default:
-        JPH_ASSERT(false);
-        return false;
-    }
-  }
+                             JPH::BroadPhaseLayer inLayer2) const override;
 };
 
 // An example contact listener
@@ -110,33 +77,25 @@ class MyContactListener : public JPH::ContactListener {
  public:
   // See: ContactListener
   virtual JPH::ValidateResult OnContactValidate(
-      const JPH::Body& inBody1, const JPH::Body& inBody2,
-      JPH::RVec3Arg inBaseOffset,
-      const JPH::CollideShapeResult& inCollisionResult) override {
-    return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
-  }
+      const JPH::Body&, const JPH::Body&, JPH::RVec3Arg,
+      const JPH::CollideShapeResult&) override;
 
-  virtual void OnContactAdded(const JPH::Body& inBody1,
-                              const JPH::Body& inBody2,
-                              const JPH::ContactManifold& inManifold,
-                              JPH::ContactSettings& ioSettings) override {}
+  virtual void OnContactAdded(const JPH::Body&, const JPH::Body&,
+                              const JPH::ContactManifold&,
+                              JPH::ContactSettings&) override {}
 
-  virtual void OnContactPersisted(const JPH::Body& inBody1,
-                                  const JPH::Body& inBody2,
-                                  const JPH::ContactManifold& inManifold,
-                                  JPH::ContactSettings& ioSettings) override {}
+  virtual void OnContactPersisted(const JPH::Body&, const JPH::Body&,
+                                  const JPH::ContactManifold&,
+                                  JPH::ContactSettings&) override {}
 
-  virtual void OnContactRemoved(
-      const JPH::SubShapeIDPair& inSubShapePair) override {}
+  virtual void OnContactRemoved(const JPH::SubShapeIDPair&) override {}
 };
 
 class MyBodyActivationListener : public JPH::BodyActivationListener {
  public:
-  virtual void OnBodyActivated(const JPH::BodyID& inBodyID,
-                               JPH::uint64 inBodyUserData) override {}
+  virtual void OnBodyActivated(const JPH::BodyID&, JPH::uint64) override {}
 
-  virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID,
-                                 JPH::uint64 inBodyUserData) override {}
+  virtual void OnBodyDeactivated(const JPH::BodyID&, JPH::uint64) override {}
 };
 
 class JoltWrapper {
@@ -145,10 +104,10 @@ class JoltWrapper {
   JPH::TempAllocatorImpl temp_allocator;
   JPH::JobSystemThreadPool job_system;
 
-  const uint max_bodies = 200;
+  const uint max_bodies = 1000;
   const uint num_body_mutexes = 0;
-  const uint max_body_pairs = 200;
-  const uint max_contact_constraints = 200;
+  const uint max_body_pairs = 1000;
+  const uint max_contact_constraints = 1000;
   BPLayerInterfaceImpl broad_phase_layer_interface;
   JPH::ObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
   ObjectLayerPairFilterImpl object_vs_object_layer_filter;
@@ -156,119 +115,16 @@ class JoltWrapper {
   MyContactListener contact_listener;
   Model convex_model;
 
-  static void init() {
-    JPH::RegisterDefaultAllocator();
-    JPH::Factory::sInstance = new JPH::Factory();
-    JPH::RegisterTypes();
-  }
+  static void init();
 
-  JoltWrapper(Shader shader)
-      : temp_allocator(10 * 1024 * 1024),
-        job_system(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers,
-                   JPH::thread::hardware_concurrency() - 1) {
-    physics_system.Init(max_bodies, num_body_mutexes, max_body_pairs,
-                        max_contact_constraints, broad_phase_layer_interface,
-                        object_vs_broadphase_layer_filter,
-                        object_vs_object_layer_filter);
+  JoltWrapper(Shader shader);
 
-    physics_system.SetBodyActivationListener(&body_activation_listener);
-
-    physics_system.SetContactListener(&contact_listener);
-
-    JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
-
-    convex_model = LoadModel("../release/convexhull.obj");
-    for (size_t i = 0; i < convex_model.materialCount; i++) {
-      convex_model.materials[i].shader = shader;
-    }
-
-    JPH::TriangleList tri_list;
-
-    // Test against all triangles in mesh
-    for (size_t mesh = 0; mesh < convex_model.meshCount; mesh++) {
-      int triangle_count = convex_model.meshes[mesh].vertexCount / 3;
-      for (int i = 0; i < triangle_count; i++) {
-        Vector3 a, b, c;
-        Vector2 u1, u2, u3;
-        Vector3* vertdata = (Vector3*)convex_model.meshes[mesh].vertices;
-        Vector2* uvdata = (Vector2*)convex_model.meshes[mesh].texcoords;
-
-        if (convex_model.meshes[mesh].indices) {
-          a = vertdata[convex_model.meshes[mesh].indices[i * 3 + 0]];
-          b = vertdata[convex_model.meshes[mesh].indices[i * 3 + 1]];
-          c = vertdata[convex_model.meshes[mesh].indices[i * 3 + 2]];
-
-          // additional uv data
-          u1 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 0]];
-          u2 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 1]];
-          u3 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 2]];
-        } else {
-          a = vertdata[i * 3 + 0];
-          b = vertdata[i * 3 + 1];
-          c = vertdata[i * 3 + 2];
-
-          // additional uv data
-          u1 = uvdata[i * 3 + 0];
-          u2 = uvdata[i * 3 + 1];
-          u3 = uvdata[i * 3 + 2];
-        }
-        tri_list.push_back(JPH::Triangle(JPH::Float3{a.x, a.y + 1, a.z},
-                                         {b.x, b.y + 1, b.z},
-                                         {c.x, c.y + 1, c.z}));
-      }
-    }
-
-    JPH::MeshShapeSettings floor_shape_settings(tri_list);
-    floor_shape_settings.SetEmbedded();
-
-    JPH::BoxShapeSettings::ShapeResult floor_shape_result =
-        floor_shape_settings.Create();
-    JPH::ShapeRefC floor_shape = floor_shape_result.Get();
-
-    JPH::BodyCreationSettings floor_settings(
-        floor_shape, JPH::RVec3(0.0_r, -1.0_r, 0.0_r), JPH::Quat::sIdentity(),
-        JPH::EMotionType::Static, Layers::NON_MOVING);
-
-    JPH::Body* floor = body_interface.CreateBody(floor_settings);
-    body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
-  }
-
-  JPH::BodyInterface& get_interface() {
-    return physics_system.GetBodyInterface();
-  }
-  void update() {
-    const float delta_time = 1.0f / 30.0f;
-
-    auto errors =
-        physics_system.Update(delta_time, 5, &temp_allocator, &job_system);
-
-    if (errors != JPH::EPhysicsUpdateError::None) {
-      // whoops ig
-    }
-  }
+  JPH::BodyInterface& get_interface();
+  void update();
 
   std::vector<JPH::BodyID> balls;
 
-  void make_ball() {
-    JPH::BodyCreationSettings sphere_settings(
-        new JPH::SphereShape(0.15f),
-        JPH::RVec3((float)(rand() % 10000) / 10000 * 8 - 4.0_r, 2.0_r,
-                   (float)(rand() % 10000) / 10000 * 4 - 2.0_r),
-        JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, Layers::MOVING);
-    JPH::BodyID sphere_id = get_interface().CreateAndAddBody(
-        sphere_settings, JPH::EActivation::Activate);
-    get_interface().SetLinearAndAngularVelocity(
-        sphere_id, JPH::Vec3(0.0f, 0.0f, 0.0f), JPH::RVec3(0.0_r, 0.0f, 0.0f));
-    get_interface().SetFriction(sphere_id, 0.3);
-    balls.push_back(sphere_id);
-  }
+  void make_ball();
 
-  std::vector<Vector3> get_ball_positions() {
-    std::vector<Vector3> ret;
-    for (auto ball : balls) {
-      JPH::RVec3 position = get_interface().GetCenterOfMassPosition(ball);
-      ret.push_back({position.GetX(), position.GetY(), position.GetZ()});
-    }
-    return ret;
-  }
+  std::vector<Vector3> get_ball_positions();
 };
