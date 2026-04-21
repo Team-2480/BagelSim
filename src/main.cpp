@@ -74,6 +74,14 @@ int main() {
   InitWindow(screenWidth, screenHeight, "EvilAwesomeBagelSimulator");
   SetConfigFlags(FLAG_FULLSCREEN_MODE | FLAG_WINDOW_RESIZABLE);
 
+  float speed_modifier = 1;  // slowmode stuff
+
+  bool time_trials = false;
+  float start_time = GetTime();
+
+  time_trials = true;  // delete this later and make a function to enable time
+                       // trials ingame
+
   Camera3D camera;
   camera.position = Vector3{0.0f, 5.0f, 5.0f};  // Camera position
   camera.target = Vector3{0.0f, 0.0f, 0.0f};    // Camera looking at point
@@ -114,7 +122,10 @@ int main() {
 
   DisableCursor();
 
-  SetTargetFPS(30);
+  SetTargetFPS(30); /*
+  is the max fps locked at 30 for you too? (doesn't reach 60
+  even when SetTargetFPS(60))
+  */
 
   JoltWrapper::init();
   JoltWrapper jolt(shader);
@@ -132,10 +143,8 @@ int main() {
       Layers::MOVING);
 
   JPH::MassProperties msp;
-  msp.SetMassAndInertiaOfSolidBox(
-      {Constants::ROBOT_SIZE.x, Constants::ROBOT_SIZE.y,
-       Constants::ROBOT_SIZE.z},
-      4);
+  msp.mMass = 30;
+  msp.ScaleToMass(1);
 
   player_settings.mMassPropertiesOverride = msp;
   player_settings.mOverrideMassProperties =
@@ -214,6 +223,11 @@ int main() {
       controller_info.keyboard_overide = true;
     }
 
+    if (IsKeyDown(KEY_LEFT_SHIFT) && camera_index == 11) {
+      camera.position.y -= 0.19;
+      camera.target.y -= 0.19;
+    }
+
     float cameraPos[3] = {camera.position.x, camera.position.y,
                           camera.position.z};
     SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos,
@@ -284,7 +298,7 @@ int main() {
       rlRotatef(angle * RAD2DEG, axis.GetX(), axis.GetY(), axis.GetZ());
 
       DrawCubeV({0.0, Constants::ROBOT_SIZE.y, 0.0}, Constants::ROBOT_SIZE,
-                global_local ? GREEN : RED);
+                global_local ? GREEN : MAGENTA);
 
       if (camera_index != 10) {
         DrawCubeV(Vector3{0, Constants::ROBOT_SIZE.y / 2,
@@ -309,7 +323,7 @@ int main() {
         rlRotatef(90, 0, 0, -1);
         rlTranslatef(0, -0.1 + 0.1 / 2, 0);
 
-        DrawModel(wheel_model, {0, 0, 0}, 1, RED);
+        DrawModel(wheel_model, {0, 0, 0}, 1, MAGENTA);
 
         rlPopMatrix();
       }
@@ -333,6 +347,20 @@ int main() {
     EndMode3D();
 
     DrawFPS(10, 10);
+
+    DrawText(  // displaying coordinates of the robot on the field
+        TextFormat("X: %f, Z: %f\n", player_pos.GetX(), player_pos.GetZ()), 10,
+        420, 20, ORANGE);
+
+    if (IsKeyPressed(KEY_T)) {
+      start_time = GetTime();
+    }
+
+    if (time_trials) {
+      DrawText(  // displaying the timer for the time trials
+          TextFormat("Time: %.2f", ((GetTime() - start_time))), 10, 40, 20,
+          SKYBLUE);
+    }
 
     EndDrawing();
   }

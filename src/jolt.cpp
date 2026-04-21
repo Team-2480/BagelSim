@@ -96,8 +96,8 @@ void JoltWrapper::make_ball() {
       JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, Layers::MOVING);
 
   JPH::MassProperties msp;
-  msp.mMass = .22;
-  msp.ScaleToMass(1);
+  msp.mMass = .02;
+  msp.ScaleToMass(0.5);
 
   sphere_settings.mMassPropertiesOverride = msp;
   sphere_settings.mOverrideMassProperties =
