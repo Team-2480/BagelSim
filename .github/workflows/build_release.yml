@@ -1,11 +1,9 @@
 name: Build Static
-on: 
-  push:
-    branches:
-      - emscripten
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/emscripten'
     steps:
       - uses: lukka/get-cmake@latest
       - uses: emscripten-core/setup-emsdk@v15
