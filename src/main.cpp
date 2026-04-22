@@ -47,6 +47,7 @@ class Scene {
 };
 
 class GameScene final : Scene {
+
  private:
   Shader shader;
   Camera3D camera;
@@ -60,7 +61,7 @@ class GameScene final : Scene {
   JoltWrapper jolt;
   uint32_t camera_index = 0;
   GamepadControlProxy controller_info;
-  bool global_local = false;
+  bool global_local = true;
   double default_rot = 0;
   std::array<float, 4> module_headings = {0, 0, 0, 0};
 
@@ -275,6 +276,7 @@ class GameScene final : Scene {
       rlPushMatrix();
       rlTranslatef(player_pos.GetX(), player_pos.GetY(), player_pos.GetZ());
 
+
       rlRotatef(angle * RAD2DEG, axis.GetX(), axis.GetY(), axis.GetZ());
 
       DrawCubeV({0.0, Constants::ROBOT_SIZE.y, 0.0}, Constants::ROBOT_SIZE,
@@ -378,6 +380,8 @@ class GameScene final : Scene {
 
 class SceneManager {
  public:
+
+
   SceneManager() {
     InitWindow(screenWidth, screenHeight, "EvilAwesomeBagelSimulator");
     SetConfigFlags(FLAG_FULLSCREEN_MODE | FLAG_WINDOW_RESIZABLE);

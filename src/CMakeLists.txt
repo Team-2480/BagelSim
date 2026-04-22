@@ -7,6 +7,15 @@ add_executable(bagelsim
 
 if (EMSCRIPTEN)
   add_compile_options(-O3)
+  set_target_properties(bagelsim PROPERTIES OUTPUT_NAME "index")
+
+  add_custom_command(TARGET bagelsim POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_BINARY_DIR}/src/index.*"
+        ${CMAKE_SOURCE_DIR}/webport/
+        COMMENT "Add files to Github pages")
+
+
 endif()
 
 target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)

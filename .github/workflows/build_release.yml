@@ -1,0 +1,53 @@
+name: Build Static
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lukka/get-cmake@latest
+      - uses: emscripten-core/setup-emsdk@v15
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make build-essential git python3 clang-18
+      - name: Build
+        run: |
+          mkdir build
+          mkdir webport
+          cd build
+          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DEMSCRIPTEN=On -DPLATFORM=Web
+          emmake make -j$(nproc)
+
+      - name: Upload build files
+        id: upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: webport/
+
+      - name: Deploy to ftp
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: webport/
+          server-dir: simulator/
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
