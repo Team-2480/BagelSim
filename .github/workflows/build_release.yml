@@ -1,5 +1,8 @@
 name: Build Static
-on: [push]
+on: 
+  push:
+    branches:
+      - emscripten
 jobs:
   build:
     runs-on: ubuntu-latest
