@@ -14,6 +14,7 @@ void GamepadControlProxy::step() {
 
     joystick_inputs[4] = IsKeyDown(KEY_Q);
     joystick_inputs[11] = IsKeyDown(KEY_E);
+    joystick_inputs[0] = IsKeyDown(KEY_C);
 
   } else {
     has_gamepad = IsGamepadAvailable(GAMEPAD_ID);
@@ -22,7 +23,7 @@ void GamepadControlProxy::step() {
       const float* axes = glfwGetJoystickAxes(GAMEPAD_ID, &count);
 
       for (int i = 0; i < count; i++) {
-        joystick_axis[i] = axes[i];
+        gamepad_axis[i] = axes[i];
       }
 
       auto buttons = glfwGetJoystickButtons(GAMEPAD_ID, &count);

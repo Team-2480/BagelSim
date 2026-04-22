@@ -226,9 +226,9 @@ class GameScene final : Scene {
     Vector3 player_velocity = Vector3Zero();
     float player_rot_velocity = 0;
 
-    if (IsKeyDown(KEY_C)) {
+    if (controller_info.joystick_inputs[0]) {
       speed_modifier = 0.1;
-    } else if (!IsKeyDown(KEY_C)) {
+    } else {
       speed_modifier = 1;
     }
 
