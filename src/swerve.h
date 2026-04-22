@@ -1,3 +1,4 @@
+#pragma once
 #include <Eigen/QR>
 #include <array>
 #include <cmath>

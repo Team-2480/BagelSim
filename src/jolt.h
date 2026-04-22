@@ -34,14 +34,14 @@ class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
 namespace BroadPhaseLayers {
 static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
 static constexpr JPH::BroadPhaseLayer MOVING(1);
-static constexpr uint NUM_LAYERS(2);
+static constexpr uint32_t NUM_LAYERS(2);
 };  // namespace BroadPhaseLayers
 
 class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface {
  public:
   BPLayerInterfaceImpl();
 
-  virtual uint GetNumBroadPhaseLayers() const override;
+  virtual uint32_t GetNumBroadPhaseLayers() const override;
 
   virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(
       JPH::ObjectLayer inLayer) const override;
@@ -104,10 +104,10 @@ class JoltWrapper {
   JPH::TempAllocatorImpl temp_allocator;
   JPH::JobSystemThreadPool job_system;
 
-  const uint max_bodies = 1000;
-  const uint num_body_mutexes = 0;
-  const uint max_body_pairs = 1000;
-  const uint max_contact_constraints = 1000;
+  const uint32_t max_bodies = 1000;
+  const uint32_t num_body_mutexes = 0;
+  const uint32_t max_body_pairs = 1000;
+  const uint32_t max_contact_constraints = 1000;
   BPLayerInterfaceImpl broad_phase_layer_interface;
   JPH::ObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
   ObjectLayerPairFilterImpl object_vs_object_layer_filter;

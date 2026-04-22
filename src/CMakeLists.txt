@@ -5,6 +5,10 @@ add_executable(bagelsim
  swerve.cpp
 )
 
+if (EMSCRIPTEN)
+  add_compile_options(-O3)
+endif()
+
 target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
 target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
 

@@ -2,6 +2,8 @@
 
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 
+#include "config.h"
+
 void JoltWrapper::init() {
   JPH::RegisterDefaultAllocator();
   JPH::Factory::sInstance = new JPH::Factory();
@@ -22,7 +24,8 @@ JoltWrapper::JoltWrapper(Shader shader)
 
   JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
 
-  convex_model = LoadModel("../release/convexhull.obj");
+  convex_model =
+      LoadModel((Constants::release_folder + "convexhull.obj").c_str());
   for (size_t i = 0; i < convex_model.materialCount; i++) {
     convex_model.materials[i].shader = shader;
   }
@@ -138,7 +141,7 @@ BPLayerInterfaceImpl::BPLayerInterfaceImpl() {
   mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
   mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
 }
-uint BPLayerInterfaceImpl::GetNumBroadPhaseLayers() const {
+uint32_t BPLayerInterfaceImpl::GetNumBroadPhaseLayers() const {
   return BroadPhaseLayers::NUM_LAYERS;
 }
 JPH::BroadPhaseLayer BPLayerInterfaceImpl::GetBroadPhaseLayer(

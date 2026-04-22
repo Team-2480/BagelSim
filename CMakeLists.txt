@@ -3,6 +3,16 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(DriveSimulator)
 
+option(EMSCRIPTEN "Build for the web" OFF)
+
+if (EMSCRIPTEN)
+  file(REAL_PATH release RELEASE_PATH)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 --preload-file ${RELEASE_PATH}@/release -sINITIAL_MEMORY=655360000 -sSTACK_SIZE=655360")
+  set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  add_compile_definitions(PLATFORM_WEB)
+  set(PLATFORM Web)
+endif ()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(src)

@@ -1,3 +1,8 @@
+#include <optional>
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
 #include <Jolt/Jolt.h>
 // jolt must be first
 
@@ -18,7 +23,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <print>
 
 #include "config.h"
 #include "control.h"
@@ -29,8 +33,6 @@
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
 #include "swerve.h"
-
-#define GLSL_VERSION 330
 
 using namespace JPH::literals;
 
@@ -44,11 +46,9 @@ class Scene {
  private:
 };
 
-class GameScene : Scene {
+class GameScene final : Scene {
  private:
-  Shader shader =
-      LoadShader(TextFormat("../release/lighting.vs", GLSL_VERSION),
-                 TextFormat("../release/lighting.fs", GLSL_VERSION));
+  Shader shader;
   Camera3D camera;
 
   float speed_modifier = 1;  // slowmode stuff
@@ -70,7 +70,7 @@ class GameScene : Scene {
   bool debug = false;
 
  public:
-  GameScene() : jolt(shader) {
+  GameScene(Shader shader) : shader(shader), jolt(shader) {
     time_trials = true;  // delete this later and make a function to enable time
                          // trials ingame
 
@@ -97,7 +97,7 @@ class GameScene : Scene {
     lights[3] = CreateLight(LIGHT_POINT, Vector3{10, 4, 0}, Vector3Zero(),
                             Color{50, 50, 50, 50}, shader);
 
-    model = LoadModel("../release/rebuilt.gltf");
+    model = LoadModel((Constants::release_folder + "rebuilt.obj").c_str());
     for (int i = 0; i < model.materialCount; i++) {
       model.materials[i].shader = shader;
     }
@@ -115,6 +115,7 @@ class GameScene : Scene {
     }
 
     JPH::BodyCreationSettings player_settings(
+
         new JPH::BoxShape(JPH::RVec3(Constants::ROBOT_SIZE.x / 2,
                                      Constants::ROBOT_SIZE.y / 2,
                                      Constants::ROBOT_SIZE.z / 2)),
@@ -370,29 +371,61 @@ class GameScene : Scene {
       }};
 };
 
-int main() {
-  const int screenWidth = 800;
-  const int screenHeight = 450;
+class SceneManager {
+ public:
+  SceneManager() {
+    InitWindow(screenWidth, screenHeight, "EvilAwesomeBagelSimulator");
+    SetConfigFlags(FLAG_FULLSCREEN_MODE | FLAG_WINDOW_RESIZABLE);
 
-  InitWindow(screenWidth, screenHeight, "EvilAwesomeBagelSimulator");
-  SetConfigFlags(FLAG_FULLSCREEN_MODE | FLAG_WINDOW_RESIZABLE);
+    SetTargetFPS(30);
+    /*
+    is the max fps locked at 30 for you too? (doesn't reach 60
+    even when SetTargetFPS(60))
+    */
 
-  SetTargetFPS(30); /*
-  is the max fps locked at 30 for you too? (doesn't reach 60
-  even when SetTargetFPS(60))
-  */
+    JoltWrapper::init();
 
-  JoltWrapper::init();
-  auto game = GameScene();
+    Shader shader =
+        LoadShader((Constants::release_folder + "lighting.vs").c_str(),
+                   (Constants::release_folder + "lighting.fs").c_str());
 
-  while (!WindowShouldClose()) {
+    scene = new GameScene(shader);
+  }
+  ~SceneManager() {
+    if (scene.has_value()) {
+      delete scene.value();
+    }
+  }
+  std::optional<GameScene*> scene = {};
+
+  void step() {
     BeginDrawing();
 
     ClearBackground(BLACK);
-    game.step();
+    if (scene.has_value()) {
+      scene.value()->step();
+    }
 
     EndDrawing();
   }
+
+ private:
+  const int screenWidth = 800;
+  const int screenHeight = 450;
+};
+
+static SceneManager manager;
+
+void step() { manager.step(); }
+
+int main() {
+#if defined(PLATFORM_WEB)
+  emscripten_set_main_loop(step, 0, 1);
+#else
+  while (!WindowShouldClose()) {
+    step();
+  }
+#endif
 
   CloseWindow();
 
