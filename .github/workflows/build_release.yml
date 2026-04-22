@@ -3,6 +3,8 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/emscripten'
     steps:
       - uses: lukka/get-cmake@latest
       - uses: emscripten-core/setup-emsdk@v15
