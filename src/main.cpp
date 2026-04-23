@@ -79,6 +79,13 @@ class MenuScene final : public Scene {
     DrawModel(torus_model, {0, 0, 0}, 1, BEIGE);
     rlPopMatrix();
 
+    rlPushMatrix();
+    rlTranslatef(0, 3, 0);
+    rlRotatef(-30, 1, 0, 0);
+
+    DrawModel(name_model, {0, 10, 5}, 1, WHITE);
+    rlPopMatrix();
+
     // EndShaderMode();
     EndMode3D();
 

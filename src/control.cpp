@@ -46,6 +46,9 @@ void GamepadControlProxy::step() {
         joystick_inputs[i] = buttons[i] == GLFW_PRESS;
       }
     }
+#ifdef PLATFORM_WEB
+    joystick_axis[2] += joystick_axis[5];
+#endif  // PLATFORM_WEB
   }
 }
 
