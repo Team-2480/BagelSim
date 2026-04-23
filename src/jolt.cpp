@@ -2,6 +2,7 @@
 
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 
+#include "Jolt/RegisterTypes.h"
 #include "config.h"
 
 void JoltWrapper::init() {
@@ -9,7 +10,8 @@ void JoltWrapper::init() {
   JPH::Factory::sInstance = new JPH::Factory();
   JPH::RegisterTypes();
 }
-JoltWrapper::JoltWrapper(Shader shader)
+void JoltWrapper::free() { JPH::UnregisterTypes(); }
+JoltWrapper::JoltWrapper(Shader& shader)
     : temp_allocator(10 * 1024 * 1024),
       job_system(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers,
                  JPH::thread::hardware_concurrency() - 1) {
@@ -24,41 +26,30 @@ JoltWrapper::JoltWrapper(Shader shader)
 
   JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
 
-  convex_model =
-      LoadModel((Constants::release_folder + "convexhull.obj").c_str());
-  for (size_t i = 0; i < convex_model.materialCount; i++) {
+  convex_model = LoadModel(RELEASE_FOLDER("hull.glb"));
+
+  for (int i = 0; i < convex_model.materialCount; i++) {
     convex_model.materials[i].shader = shader;
   }
 
   JPH::TriangleList tri_list;
 
   // Test against all triangles in mesh
-  for (size_t mesh = 0; mesh < convex_model.meshCount; mesh++) {
-    int triangle_count = convex_model.meshes[mesh].vertexCount / 3;
+  for (int mesh = 0; mesh < convex_model.meshCount; mesh++) {
+    int triangle_count = convex_model.meshes[mesh].triangleCount;
     for (int i = 0; i < triangle_count; i++) {
       Vector3 a, b, c;
-      Vector2 u1, u2, u3;
       Vector3* vertdata = (Vector3*)convex_model.meshes[mesh].vertices;
-      Vector2* uvdata = (Vector2*)convex_model.meshes[mesh].texcoords;
 
       if (convex_model.meshes[mesh].indices) {
         a = vertdata[convex_model.meshes[mesh].indices[i * 3 + 0]];
         b = vertdata[convex_model.meshes[mesh].indices[i * 3 + 1]];
         c = vertdata[convex_model.meshes[mesh].indices[i * 3 + 2]];
 
-        // additional uv data
-        u1 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 0]];
-        u2 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 1]];
-        u3 = uvdata[convex_model.meshes[mesh].indices[i * 3 + 2]];
       } else {
         a = vertdata[i * 3 + 0];
         b = vertdata[i * 3 + 1];
         c = vertdata[i * 3 + 2];
-
-        // additional uv data
-        u1 = uvdata[i * 3 + 0];
-        u2 = uvdata[i * 3 + 1];
-        u3 = uvdata[i * 3 + 2];
       }
       tri_list.push_back(JPH::Triangle(JPH::Float3{a.x, a.y + 1, a.z},
                                        {b.x, b.y + 1, b.z},
@@ -80,6 +71,7 @@ JoltWrapper::JoltWrapper(Shader shader)
   JPH::Body* floor = body_interface.CreateBody(floor_settings);
   body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
 }
+
 void JoltWrapper::update() {
   const float delta_time = 1.0f / 30.0f;
 

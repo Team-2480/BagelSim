@@ -3,6 +3,9 @@ add_executable(bagelsim
  jolt.cpp
  control.cpp
  swerve.cpp
+ nuklear.cpp
+ rlights.cpp
+ game.cpp
 )
 
 if (EMSCRIPTEN)
@@ -18,8 +21,11 @@ if (EMSCRIPTEN)
 
 endif()
 
-target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
-target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic -Wuninitialized)
+target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic -Wuninitialized)
+
+set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -ggdb")
+set(CMAKE_C_FLAGS_DEBUG  "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -ggdb")
 
 include(FetchContent)
 
@@ -43,7 +49,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(eigen)
 
-target_link_libraries(bagelsim PUBLIC raylib glfw Jolt Eigen3::Eigen)
+FetchContent_Declare(
+    raylib-nuklear
+    URL https://github.com/RobLoach/raylib-nuklear/archive/refs/tags/v5.5.1.tar.gz
+)
+
+FetchContent_MakeAvailable(raylib-nuklear)
+
+
+target_link_libraries(bagelsim PUBLIC raylib glfw Jolt Eigen3::Eigen raylib_nuklear)
 
 add_custom_command(TARGET bagelsim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy

@@ -113,11 +113,14 @@ class JoltWrapper {
   ObjectLayerPairFilterImpl object_vs_object_layer_filter;
   MyBodyActivationListener body_activation_listener;
   MyContactListener contact_listener;
+
   Model convex_model;
 
   static void init();
+  static void free();
 
-  JoltWrapper(Shader shader);
+  JoltWrapper(Shader& shader);
+  ~JoltWrapper() { UnloadModel(convex_model); }
 
   JPH::BodyInterface& get_interface();
   void update();

@@ -17,8 +17,11 @@ constexpr float CONTROLER_DEADBAND = 0.01;
 
 #ifdef PLATFORM_WEB
 constexpr std::string release_folder = "release/";
+#define RELEASE_FOLDER(value)  "release/" value
 #else
 constexpr std::string release_folder = "../release/";
+#define RELEASE_FOLDER(value)  "../release/" value
 #endif
+
 
 }  // namespace Constants
