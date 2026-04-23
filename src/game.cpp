@@ -100,9 +100,7 @@ void GameScene::step() {
 
   if (camera_index == 11) {
     UpdateCamera(&camera, CAMERA_FREE);
-    controller_info.keyboard_overide = false;
   } else {
-    controller_info.keyboard_overide = true;
   }
 
   if (IsKeyDown(KEY_LEFT_SHIFT) && camera_index == 11) {

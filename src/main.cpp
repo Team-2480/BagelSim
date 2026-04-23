@@ -1,3 +1,4 @@
+#include "config.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rcamera.h"
@@ -9,6 +10,13 @@ class MenuScene final : public Scene {
   Font font;
   Model map_model;
   Shader& shader;
+  Camera ui_camera{
+      .position = Vector3{0.0f, -5.0f, 10.0f},
+      .target = Vector3{0.0f, 0.0f, 0.0f},
+      .up = Vector3{0.0f, 1.0f, 0.0f},
+      .fovy = 100.0f,
+      .projection = CAMERA_PERSPECTIVE,
+  };
   Camera camera{
       .position = Vector3{0.0f, 4.0f, 10.0f},
       .target = Vector3{0.0f, 0.0f, 0.0f},
@@ -17,11 +25,17 @@ class MenuScene final : public Scene {
       .projection = CAMERA_PERSPECTIVE,
   };
 
+  Mesh torus = GenMeshTorus(0.4f, 6, 10, 8);
+  Model torus_model = LoadModelFromMesh(torus);
+  Model name_model = LoadModel(RELEASE_FOLDER("name.glb"));
+  float torus_rotate;
+
  public:
   MenuScene(ProgramState& program_state, Shader& shader)
       : Scene(program_state), shader(shader) {
-    int font_size = 16;
-    font = LoadFont((Constants::release_folder + "Lato-Regular.ttf").c_str());
+    int font_size = 20;
+    font = LoadFontEx((Constants::release_folder + "Lato-Regular.ttf").c_str(),
+                      20, NULL, 0);
     ctx = InitNuklearEx(font, font_size);
 
     map_model = LoadModel(RELEASE_FOLDER("map.glb"));
@@ -33,6 +47,7 @@ class MenuScene final : public Scene {
     UnloadNuklear(ctx);
     UnloadFont(font);
     UnloadModel(map_model);
+    UnloadModel(torus_model);
   }
 
   void draw() override {
@@ -50,6 +65,23 @@ class MenuScene final : public Scene {
     EndShaderMode();
     EndMode3D();
 
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {0, 0, 0, 100});
+
+    BeginMode3D(ui_camera);
+    // BeginShaderMode(shader);
+
+    rlPushMatrix();
+    rlTranslatef(0, 3, 0);
+    rlRotatef(-30, 1, 0, 0);
+    rlRotatef(torus_rotate, 0, 0, 1);
+    torus_rotate += 1;
+
+    DrawModel(torus_model, {0, 0, 0}, 1, BEIGE);
+    rlPopMatrix();
+
+    // EndShaderMode();
+    EndMode3D();
+
     DrawNuklear(ctx);
   }
   void step() override {
@@ -63,19 +95,23 @@ class MenuScene final : public Scene {
         auto width_y = GetScreenHeight() - padding * 2;
     */
 
-    auto center_x = GetScreenWidth() / 2;
-    auto width_x = GetScreenWidth() * 0.8;
-    auto center_y = GetScreenHeight() / 2;
-    auto width_y = GetScreenHeight() * 0.8;
+    float center_x = GetScreenWidth() / 2.0f;
+    float width_x = std::min(600, GetScreenWidth());
+    float center_y = GetScreenHeight() / 2.0f;
+    float width_y = std::min(300, GetScreenHeight());
 
-    ctx->style.window.fixed_background = nk_style_item_color({0, 0, 0, 100});
+    ctx->style.window.fixed_background = nk_style_item_color({0, 0, 0, 0});
     if (nk_begin(ctx, "Nuklear",
                  nk_rect(center_x - width_x / 2, center_y - width_y / 2,
                          width_x, width_y),
                  NK_WINDOW_BACKGROUND)) {
-      nk_layout_row_static(ctx, 50, width_x - 20, 1);
+      nk_layout_row_dynamic(ctx, 50, 1);
 
-      nk_label(ctx, "BagelSim", NK_TEXT_CENTERED);
+      // logo
+      nk_spacer(ctx);
+      nk_spacer(ctx);
+      nk_spacer(ctx);
+
       if (nk_button_label(ctx, "Play")) {
         state.screen = ProgramState::SCREEN_GAME;
       }
