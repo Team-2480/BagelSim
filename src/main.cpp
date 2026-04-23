@@ -121,13 +121,13 @@ class SceneManager {
     SetShaderValue(shader, ambient_loc, ambient_lighting, SHADER_UNIFORM_VEC4);
 
     lights[0] = CreateLight(LIGHT_POINT, Vector3{0, 4, -4}, Vector3Zero(),
-                            Color{50, 50, 50, 50}, shader);
+                            Color{50, 50, 50, 50}, shader, 0);
     lights[1] = CreateLight(LIGHT_POINT, Vector3{0, 4, 4}, Vector3Zero(),
-                            Color{50, 50, 50, 50}, shader);
+                            Color{50, 50, 50, 50}, shader, 1);
     lights[2] = CreateLight(LIGHT_POINT, Vector3{-10, 4, 0}, Vector3Zero(),
-                            Color{50, 50, 50, 50}, shader);
+                            Color{50, 50, 50, 50}, shader, 2);
     lights[3] = CreateLight(LIGHT_POINT, Vector3{10, 4, 0}, Vector3Zero(),
-                            Color{50, 50, 50, 50}, shader);
+                            Color{50, 50, 50, 50}, shader, 3);
 
     game_scene = new GameScene(state, shader);
     menu_scene = new MenuScene(state, shader);
