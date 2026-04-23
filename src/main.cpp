@@ -87,7 +87,7 @@ class MenuScene final : public Scene {
 };
 
 static Light lights[MAX_LIGHTS];
-Shader shader;
+static Shader shader;
 
 class SceneManager {
  private:
@@ -98,6 +98,8 @@ class SceneManager {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     InitWindow(screenWidth, screenHeight, "BagelSim");
 
+    shader = LoadShader((Constants::release_folder + "lighting.vs").c_str(),
+                        (Constants::release_folder + "lighting.fs").c_str());
 #ifdef PLATFORM_WEB
     SetTraceLogLevel(LOG_ERROR);
 #endif
@@ -160,9 +162,6 @@ void step() { manager->step(); }
 
 int main() {
   manager = new SceneManager;
-
-  shader = LoadShader((Constants::release_folder + "lighting.vs").c_str(),
-                      (Constants::release_folder + "lighting.fs").c_str());
 
   shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
 
