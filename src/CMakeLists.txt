@@ -14,11 +14,12 @@ if (EMSCRIPTEN)
 
   add_custom_command(TARGET bagelsim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_SOURCE_DIR}/shell/*"
+        ${CMAKE_SOURCE_DIR}/webport/ 
+        && ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/src/index.*"
         ${CMAKE_SOURCE_DIR}/webport/
         COMMENT "Add files to Github pages")
-
-
 endif()
 
 target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic -Wuninitialized)
