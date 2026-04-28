@@ -82,17 +82,14 @@ void JoltWrapper::update() {
     // whoops ig
   }
 }
-void JoltWrapper::make_ball() {
-  JPH::EOverrideMassProperties::MassAndInertiaProvided;
+void JoltWrapper::make_ball(float x, float y) {
   JPH::BodyCreationSettings sphere_settings(
-      new JPH::SphereShape(0.15f),
-      JPH::RVec3((float)(rand() % 10000) / 10000 * 8 - 4.0_r, 2.0_r,
-                 (float)(rand() % 10000) / 10000 * 4 - 2.0_r),
+      new JPH::SphereShape(Constants::BALL_RADIUS), JPH::RVec3(x, 2.0_r, y),
       JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, Layers::MOVING);
 
   JPH::MassProperties msp;
   msp.mMass = .02;
-  msp.ScaleToMass(0.5);
+  msp.ScaleToMass(0.1);
 
   sphere_settings.mMassPropertiesOverride = msp;
   sphere_settings.mOverrideMassProperties =
@@ -102,7 +99,7 @@ void JoltWrapper::make_ball() {
       sphere_settings, JPH::EActivation::Activate);
   get_interface().SetLinearAndAngularVelocity(
       sphere_id, JPH::Vec3(0.0f, 0.0f, 0.0f), JPH::RVec3(0.0_r, 0.0f, 0.0f));
-  get_interface().SetFriction(sphere_id, 0.3);
+  get_interface().SetFriction(sphere_id, 0.1);
   balls.push_back(sphere_id);
 }
 std::vector<Vector3> JoltWrapper::get_ball_positions() {

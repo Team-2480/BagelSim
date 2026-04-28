@@ -21,7 +21,8 @@ GameScene::GameScene(ProgramState& program_state, Shader& shader)
     model.materials[i].shader = shader;
   }
 
-  sphere_model = LoadModelFromMesh(GenMeshSphere(0.15f, 20, 20));
+  sphere_model =
+      LoadModelFromMesh(GenMeshSphere(Constants::BALL_RADIUS, 20, 20));
   for (int i = 0; i < sphere_model.materialCount; i++) {
     sphere_model.materials[i].shader = shader;
   }
@@ -31,12 +32,15 @@ GameScene::GameScene(ProgramState& program_state, Shader& shader)
   }
 
   /// sphere stuff
-  for (size_t i = 0; i < 100; i++) {
-    jolt.make_ball();
+  for (float x = -1.729069 / 2; x < 1.729069 / 2;
+       x += Constants::BALL_RADIUS * 2) {
+    for (float y = -4.610849 / 2; y < 4.610849 / 2;
+         y += Constants::BALL_RADIUS * 2) {
+      jolt.make_ball(x, y);
+    }
   }
 
   JPH::BodyCreationSettings player_settings(
-
       new JPH::BoxShape(JPH::RVec3(Constants::ROBOT_SIZE.x / 2,
                                    Constants::ROBOT_SIZE.y / 2,
                                    Constants::ROBOT_SIZE.z / 2)),

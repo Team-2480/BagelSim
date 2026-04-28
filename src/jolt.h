@@ -104,10 +104,10 @@ class JoltWrapper {
   JPH::TempAllocatorImpl temp_allocator;
   JPH::JobSystemThreadPool job_system;
 
-  const uint32_t max_bodies = 1000;
-  const uint32_t num_body_mutexes = 0;
-  const uint32_t max_body_pairs = 1000;
-  const uint32_t max_contact_constraints = 1000;
+  const uint32_t max_bodies = 2000;
+  const uint32_t num_body_mutexes = 20;
+  const uint32_t max_body_pairs = 2000;
+  const uint32_t max_contact_constraints = 2000;
   BPLayerInterfaceImpl broad_phase_layer_interface;
   JPH::ObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
   ObjectLayerPairFilterImpl object_vs_object_layer_filter;
@@ -127,7 +127,7 @@ class JoltWrapper {
 
   std::vector<JPH::BodyID> balls;
 
-  void make_ball();
+  void make_ball(float x, float y);
 
   std::vector<Vector3> get_ball_positions();
 };
