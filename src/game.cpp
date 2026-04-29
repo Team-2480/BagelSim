@@ -1,7 +1,9 @@
 #include "Jolt/Jolt.h"
 // on top
 
+#include <cmath>
 #include <cstdio>
+#include <format>
 
 #include "Jolt/Math/Real.h"
 #include "Jolt/Math/Vec3.h"
@@ -96,7 +98,16 @@ void GameScene::step() {
   }
 
   if (!paused) {
-    game_step();
+    if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
+      shovel_time_remaining -= 1.0 / 30.0;
+      if (shovel_time_remaining < 0.0) {
+        shovel_time_remaining = 0.0f;
+      }
+    }
+
+    if (shovel_time_remaining > 0.0) {
+      game_step();
+    }
   } else {
     UpdateNuklear(ctx);
 
@@ -250,6 +261,8 @@ void GameScene::game_step() {
       JPH::RVec3 position =
           jolt.get_interface().GetCenterOfMassPosition(ball.first);
       if (position.GetX() > 7.5 && position.GetZ() < -2) {
+        // ball scored
+        shovel_score++;
         jolt.balls[ball.first] = false;
         jolt.get_interface().DeactivateBody(ball.first);
         jolt.get_interface().SetPosition(ball.first, JPH::Vec3(0, 10, 0),
@@ -260,6 +273,20 @@ void GameScene::game_step() {
 }
 void GameScene::draw() {
   game_draw();
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
+    auto time_str =
+        std::format("{:02.0f}:{:02.0f}", std::roundf(shovel_time_remaining),
+                    std::fmod(shovel_time_remaining, 1.0) * 100);
+    auto text_size = MeasureTextEx(segment_font, time_str.c_str(), 80, 1.0);
+    DrawTextEx(segment_font, time_str.c_str(),
+               {GetScreenWidth() / 2.0f - text_size.x / 2.0f, 10}, 80, 1.0,
+               WHITE);
+
+    auto score_str = std::format("SCORE: {}", shovel_score);
+    DrawTextEx(score_font, score_str.c_str(),
+               {GetScreenWidth() / 2.0f - text_size.x / 2.0f, 10 + text_size.y},
+               30, 1.0, WHITE);
+  }
 
   if (paused) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {0, 0, 0, 100});
@@ -364,7 +391,7 @@ void GameScene::game_draw() {
     start_time = GetTime();
   }
 
-  if (time_trials) {
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
     DrawText(  // displaying the timer for the time trials
         TextFormat("Time: %.2f", ((GetTime() - start_time))), 10, 40, 20,
         SKYBLUE);

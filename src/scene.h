@@ -49,6 +49,7 @@ struct ProgramState {
 
   enum GameMode {
     GAMEMODE_ARCADE_SHOVEL,
+    GAMEMODE_ARCADE_TIME,
     GAMEMODE_SANDBOX,
   } gamemode = GAMEMODE_SANDBOX;
 
@@ -75,10 +76,19 @@ class GameScene final : public Scene {
   Shader& shader;
   Camera3D camera;
 
+  Font segment_font = LoadFontEx(RELEASE_FOLDER("Lato-Black.ttf"), 80, NULL, 0);
+  Font score_font = LoadFontEx(RELEASE_FOLDER("Lato-Bold.ttf"), 30, NULL, 0);
+
   float speed_modifier = 1;  // slowmode stuff
 
+  // time trials
   bool time_trials = false;
   float start_time = GetTime();
+
+  // shovel
+  float shovel_time_remaining = 60.0;
+  size_t shovel_score = 0;
+
   JPH::BodyID player_id;
 
   JoltWrapper jolt;
