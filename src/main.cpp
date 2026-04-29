@@ -218,8 +218,19 @@ class MenuScene final : public Scene {
             nk_group_end(ctx);
           }
 
+          nk_layout_row_dynamic(ctx, 50, 3);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          if (nk_button_label(ctx, "Back")) {
+            state.screen = ProgramState::SCREEN_MAIN_MENU;
+          }
+          nk_spacer(ctx);
           break;
         }
+        case ProgramState::SCREEN_SCORE_SUBMIT:
+          [[fallthrough]];
         case ProgramState::SCREEN_GAME_MODE: {
           nk_layout_row_dynamic(ctx, 250, 2);
           float height = 210;
@@ -295,6 +306,15 @@ class MenuScene final : public Scene {
             nk_group_end(ctx);
           }
 
+          nk_layout_row_dynamic(ctx, 50, 3);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          nk_spacer(ctx);
+          if (nk_button_label(ctx, "Back")) {
+            state.screen = ProgramState::SCREEN_CONTROL;
+          }
+          nk_spacer(ctx);
           break;
         }
       }

@@ -44,7 +44,8 @@ struct ProgramState {
     SCREEN_MAIN_MENU,
     SCREEN_CONTROL,
     SCREEN_GAME_MODE,
-    SCREEN_GAME
+    SCREEN_GAME,
+    SCREEN_SCORE_SUBMIT
   } screen = SCREEN_MAIN_MENU;
 
   enum GameMode {
@@ -76,10 +77,15 @@ class GameScene final : public Scene {
   Shader& shader;
   Camera3D camera;
 
-  Font segment_font = LoadFontEx(RELEASE_FOLDER("Lato-Black.ttf"), 80, NULL, 0);
-  Font score_font = LoadFontEx(RELEASE_FOLDER("Lato-Bold.ttf"), 30, NULL, 0);
-
   float speed_modifier = 1;  // slowmode stuff
+
+  // score submut
+  char submit_nametag[6] = "NAME\0";
+  bool submit_nametag_changed = false;
+  char submit_number[6] = "00000";
+  bool submit_number_changed = false;
+  char submit_email[256] = "name@domain.com";
+  bool submit_email_changed = false;
 
   // time trials
   float time_trial_selected = 0;
@@ -100,7 +106,10 @@ class GameScene final : public Scene {
   // shovel
   float shovel_time_remaining = 60.0;
   size_t shovel_score = 0;
+  Font segment_font = LoadFontEx(RELEASE_FOLDER("Lato-Black.ttf"), 80, NULL, 0);
+  Font score_font = LoadFontEx(RELEASE_FOLDER("Lato-Bold.ttf"), 30, NULL, 0);
 
+  // always
   JPH::BodyID player_id;
 
   JoltWrapper jolt;

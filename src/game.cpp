@@ -104,23 +104,58 @@ GameScene::GameScene(ProgramState& program_state, Shader& shader)
   }
 }
 
+NK_API nk_bool nk_filter_caps(const struct nk_text_edit* box, nk_rune unicode) {
+  if (unicode >= '0' && unicode <= '9') return nk_true;
+  if (unicode >= 'A' && unicode <= 'Z') return nk_true;
+
+  return nk_false;
+}
+
 void GameScene::step() {
-  if (IsKeyPressed(KEY_ESCAPE)) {
-    paused = !paused;
-  }
+  if (state.screen == ProgramState::SCREEN_GAME) {
+    if (IsKeyPressed(KEY_ESCAPE)) {
+      paused = !paused;
+    }
 
-  if (!paused) {
-    if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
-      shovel_time_remaining -= 1.0 / 30.0;
-      if (shovel_time_remaining < 0.0) {
-        shovel_time_remaining = 0.0f;
+    game_step();
+
+    if (!paused) {
+      if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
+        shovel_time_remaining -= 1.0 / 30.0;
+        if (shovel_time_remaining < 0.0) {
+          shovel_time_remaining = 0.0f;
+          state.screen = ProgramState::SCREEN_SCORE_SUBMIT;
+        }
       }
-    }
 
-    if (shovel_time_remaining > 0.0) {
-      game_step();
+    } else {
+      UpdateNuklear(ctx);
+
+      float center_x = GetScreenWidth() / 2.0f;
+      float width_x = std::min(700, GetScreenWidth());
+      float center_y = GetScreenHeight() / 2.0f;
+      float width_y = std::min(500, GetScreenHeight());
+
+      ctx->style.window.fixed_background = nk_style_item_color({0, 0, 0, 0});
+      ctx->style.button.rounding = 20;
+
+      if (nk_begin(ctx, "Nuklear",
+                   nk_rect(center_x - width_x / 2, center_y - width_y / 2,
+                           width_x, width_y),
+                   NK_WINDOW_BACKGROUND)) {
+        nk_layout_row_dynamic(ctx, 50, 1);
+        nk_spacer(ctx);
+        nk_layout_row_dynamic(ctx, 50, 3);
+
+        nk_spacer(ctx);
+        if (nk_button_label(ctx, "Return To Home")) {
+          state.screen = ProgramState::SCREEN_MAIN_MENU;
+        }
+      }
+      nk_end(ctx);
     }
-  } else {
+  }
+  if (state.screen == ProgramState::SCREEN_SCORE_SUBMIT) {
     UpdateNuklear(ctx);
 
     float center_x = GetScreenWidth() / 2.0f;
@@ -131,18 +166,84 @@ void GameScene::step() {
     ctx->style.window.fixed_background = nk_style_item_color({0, 0, 0, 0});
     ctx->style.button.rounding = 20;
 
-    if (nk_begin(ctx, "Nuklear",
+    ctx->style.window.fixed_background = nk_style_item_color({0, 0, 0, 50});
+    ctx->style.window.rounding = 20;
+    ctx->style.window.border = 2;
+    ctx->style.window.padding = {20, 20};
+    ctx->style.window.border_color = {255, 255, 255, 255};
+    ctx->style.text.color = {255, 255, 255, 255};
+
+    if (nk_begin(ctx, "Score Submit",
                  nk_rect(center_x - width_x / 2, center_y - width_y / 2,
                          width_x, width_y),
-                 NK_WINDOW_BACKGROUND)) {
+                 NK_WINDOW_BACKGROUND | NK_WINDOW_BORDER)) {
       nk_layout_row_dynamic(ctx, 50, 1);
-      nk_spacer(ctx);
-      nk_layout_row_dynamic(ctx, 50, 3);
+      if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
+        nk_label(
+            ctx,
+            std::format("You scored an {} on Shovel.", shovel_score).c_str(),
+            NK_TEXT_CENTERED);
+      } else if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+        nk_label(ctx, std::format("You scored an ... on Time Trials.").c_str(),
+                 NK_TEXT_CENTERED);
+      }
 
+      nk_layout_row_dynamic(ctx, 25, 1);
       nk_spacer(ctx);
-      if (nk_button_label(ctx, "Return To Home")) {
+
+      nk_label(ctx, "Leaderboard Info", NK_TEXT_CENTERED);
+      nk_layout_row_dynamic(ctx, 50, 2);
+      nk_flags name_tag_event = nk_edit_string_zero_terminated(
+          ctx, NK_EDIT_FIELD | NK_EDIT_AUTO_SELECT, submit_nametag,
+          sizeof(submit_nametag), nk_filter_caps);
+
+      if (name_tag_event == NK_EDIT_ACTIVE) {
+        submit_nametag_changed = true;
+      }
+
+      nk_flags number_event = nk_edit_string_zero_terminated(
+          ctx, NK_EDIT_FIELD, submit_number, sizeof(submit_number),
+          nk_filter_decimal);
+      if (number_event == NK_EDIT_ACTIVE) {
+        submit_number_changed = true;
+      }
+
+      nk_layout_row_dynamic(ctx, 50, 1);
+      nk_label(ctx, "Optional & Not Displayed Email", NK_TEXT_CENTERED);
+      nk_flags email_event =
+          nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, submit_email,
+                                         sizeof(submit_email), nk_filter_ascii);
+
+      if (email_event == NK_EDIT_ACTIVE) {
+        submit_email_changed = true;
+      }
+
+      nk_layout_row_dynamic(ctx, 50, 3);
+      nk_spacer(ctx);
+
+      if (!submit_nametag_changed || !submit_number_changed) {
+        nk_widget_disable_begin(ctx);
+      }
+
+      if (nk_button_label(ctx, "Submit")) {
         state.screen = ProgramState::SCREEN_MAIN_MENU;
       }
+
+      if (!submit_nametag_changed || !submit_number_changed) {
+        nk_widget_disable_end(ctx);
+      }
+
+      nk_spacer(ctx);
+
+      nk_spacer(ctx);
+      nk_spacer(ctx);
+      nk_spacer(ctx);
+
+      nk_spacer(ctx);
+      if (nk_button_label(ctx, "Nope! Just quit.")) {
+        state.screen = ProgramState::SCREEN_MAIN_MENU;
+      }
+      nk_spacer(ctx);
     }
     nk_end(ctx);
   }
@@ -160,27 +261,27 @@ void GameScene::game_step() {
   float angle;
   player_rot.GetAxisAngle(axis, angle);
 
-  // if (state.gamemode == ProgramState::GAMEMODE_SANDBOX) {
-  if (IsKeyPressed(KEY_ONE)) {
-    camera_index = 0;
-    EnableCursor();
-  } else if (IsKeyPressed(KEY_TWO)) {
-    camera_index = 1;
-    EnableCursor();
-  } else if (IsKeyPressed(KEY_THREE)) {
-    camera_index = 2;
-    EnableCursor();
-  } else if (IsKeyPressed(KEY_FOUR)) {
-    camera_index = 3;
-    EnableCursor();
-  } else if (IsKeyPressed(KEY_NINE)) {
-    camera_index = 11;
-    DisableCursor();
-  } else if (IsKeyPressed(KEY_ZERO)) {
-    camera_index = 10;
-    EnableCursor();
+  if (state.gamemode == ProgramState::GAMEMODE_SANDBOX) {
+    if (IsKeyPressed(KEY_ONE)) {
+      camera_index = 0;
+      EnableCursor();
+    } else if (IsKeyPressed(KEY_TWO)) {
+      camera_index = 1;
+      EnableCursor();
+    } else if (IsKeyPressed(KEY_THREE)) {
+      camera_index = 2;
+      EnableCursor();
+    } else if (IsKeyPressed(KEY_FOUR)) {
+      camera_index = 3;
+      EnableCursor();
+    } else if (IsKeyPressed(KEY_NINE)) {
+      camera_index = 11;
+      DisableCursor();
+    } else if (IsKeyPressed(KEY_ZERO)) {
+      camera_index = 10;
+      EnableCursor();
+    }
   }
-  //}
 
   if (camera_index < camera_perspectives.size()) {
     camera_perspectives[camera_index].target = Vector3Lerp(
@@ -291,6 +392,7 @@ void GameScene::game_step() {
 }
 void GameScene::draw() {
   game_draw();
+
   if (state.gamemode == ProgramState::GAMEMODE_ARCADE_SHOVEL) {
     auto time_str =
         std::format("{:02.0f}:{:02.0f}", std::roundf(shovel_time_remaining),
@@ -306,7 +408,13 @@ void GameScene::draw() {
                30, 1.0, WHITE);
   }
 
-  if (paused) {
+  if (paused && state.screen == ProgramState::SCREEN_GAME) {
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {0, 0, 0, 100});
+
+    DrawNuklear(ctx);
+  }
+
+  if (state.screen == ProgramState::SCREEN_SCORE_SUBMIT) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {0, 0, 0, 100});
 
     DrawNuklear(ctx);
@@ -407,8 +515,7 @@ void GameScene::game_draw() {
     } else if (tt_target_dist < 0.7 &&
                time_trial_target ==
                    time_trials[time_trial_selected].size() - 1) {
-      // TODO: replace with score flow
-      paused = true;
+      state.screen = ProgramState::SCREEN_SCORE_SUBMIT;
       printf("Completed Trial with a time of %.2f seconds\n",
              GetTime() - start_time);
       // will add a visual thing later and more stuff
