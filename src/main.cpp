@@ -37,11 +37,23 @@ class MenuScene final : public Scene {
     ctx = InitNuklearEx(font, font_size);
 
     logo = LoadNuklearImage(RELEASE_FOLDER("logo.png"));
+    GenTextureMipmaps((Texture*)logo.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(logo), TEXTURE_FILTER_TRILINEAR);
     keyboard = LoadNuklearImage(RELEASE_FOLDER("keyboard.png"));
+    GenTextureMipmaps((Texture*)keyboard.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(keyboard), TEXTURE_FILTER_TRILINEAR);
     joystick = LoadNuklearImage(RELEASE_FOLDER("3dpro.png"));
+    GenTextureMipmaps((Texture*)joystick.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(joystick), TEXTURE_FILTER_TRILINEAR);
     touch = LoadNuklearImage(RELEASE_FOLDER("mobile.png"));
+    GenTextureMipmaps((Texture*)touch.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(touch), TEXTURE_FILTER_TRILINEAR);
     shovel = LoadNuklearImage(RELEASE_FOLDER("shovel.png"));
+    GenTextureMipmaps((Texture*)shovel.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(shovel), TEXTURE_FILTER_TRILINEAR);
     play = LoadNuklearImage(RELEASE_FOLDER("play.png"));
+    GenTextureMipmaps((Texture*)play.handle.ptr);
+    SetTextureFilter(TextureFromNuklear(play), TEXTURE_FILTER_TRILINEAR);
 
     map_model = LoadModel(RELEASE_FOLDER("map.glb"));
     for (int i = 0; i < map_model.materialCount; i++) {

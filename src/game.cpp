@@ -93,7 +93,6 @@ GameScene::GameScene(ProgramState& program_state, Shader& shader)
   ctx = InitNuklearEx(font, font_size);
 
   if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
-    // FOXMOSS: Tell oliver about this
     start_time = GetTime();
     time_trial_selected = 0;
     time_trial_target = 0;

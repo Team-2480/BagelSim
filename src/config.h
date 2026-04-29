@@ -17,9 +17,9 @@ constexpr float CONTROLER_DEADBAND = 0.01;
 constexpr float BALL_RADIUS = 0.075;
 
 #ifdef PLATFORM_WEB
-#define RELEASE_FOLDER(value)  "release/" value
+#define RELEASE_FOLDER(value) "release/" value
 #else
-#define RELEASE_FOLDER(value)  "../release/" value
+#define RELEASE_FOLDER(value) "../release/" value
 #endif
 
 #define VERSION_STR "v0.0.1"
