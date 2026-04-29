@@ -503,7 +503,8 @@ void GameScene::game_draw() {
 
   EndShaderMode();
 
-  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME &&
+      state.screen == ProgramState::SCREEN_GAME) {
     tt_target_dist = Vector3Distance(
         {player_pos.GetX(), player_pos.GetY(), player_pos.GetZ()},
         time_trials[time_trial_selected][time_trial_target]);

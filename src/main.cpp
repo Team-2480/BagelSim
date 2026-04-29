@@ -64,6 +64,9 @@ class MenuScene final : public Scene {
     UnloadNuklearImage(logo);
     UnloadNuklearImage(keyboard);
     UnloadNuklearImage(joystick);
+    UnloadNuklearImage(touch);
+    UnloadNuklearImage(shovel);
+    UnloadNuklearImage(play);
 
     UnloadNuklear(ctx);
     UnloadFont(font);
@@ -377,6 +380,8 @@ class SceneManager {
         }
         scene = std::static_pointer_cast<Scene>(menu_scene.value());
         break;
+      case ProgramState::SCREEN_SCORE_SUBMIT:
+        [[fallthrough]];
       case ProgramState::SCREEN_GAME:
         if (!game_scene.has_value()) {
           game_scene = std::make_unique<GameScene>(state, shader);

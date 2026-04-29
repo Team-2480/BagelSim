@@ -144,6 +144,8 @@ class GameScene final : public Scene {
     UnloadModel(sphere_model);
     UnloadModel(player_model);
     UnloadFont(font);
+    UnloadFont(segment_font);
+    UnloadFont(score_font);
 
     UnloadNuklear(ctx);
   }

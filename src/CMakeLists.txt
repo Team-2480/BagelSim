@@ -25,8 +25,8 @@ endif()
 target_compile_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic -Wuninitialized)
 target_link_options(bagelsim PRIVATE -Wall -Wextra -Wpedantic -Wuninitialized)
 
-set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -ggdb")
-set(CMAKE_C_FLAGS_DEBUG  "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -ggdb")
+set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -g")
+set(CMAKE_C_FLAGS_DEBUG  "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -g")
 
 include(FetchContent)
 
