@@ -21,13 +21,6 @@ class MenuScene final : public Scene {
   struct nk_image shovel;
   struct nk_image play;
 
-  Camera ui_camera{
-      .position = Vector3{0.0f, -5.0f, 10.0f},
-      .target = Vector3{0.0f, 0.0f, 0.0f},
-      .up = Vector3{0.0f, 1.0f, 0.0f},
-      .fovy = 100.0f,
-      .projection = CAMERA_PERSPECTIVE,
-  };
   Camera camera{
       .position = Vector3{0.0f, 4.0f, 10.0f},
       .target = Vector3{0.0f, 0.0f, 0.0f},
@@ -40,8 +33,7 @@ class MenuScene final : public Scene {
   MenuScene(ProgramState& program_state, Shader& shader)
       : Scene(program_state), shader(shader) {
     int font_size = 20;
-    font = LoadFontEx((Constants::release_folder + "Lato-Regular.ttf").c_str(),
-                      20, NULL, 0);
+    font = LoadFontEx(RELEASE_FOLDER("Lato-Regular.ttf"), 20, NULL, 0);
     ctx = InitNuklearEx(font, font_size);
 
     logo = LoadNuklearImage(RELEASE_FOLDER("logo.png"));
@@ -231,7 +223,7 @@ class MenuScene final : public Scene {
           if (nk_group_begin(ctx, "Sandbox Mode",
                              NK_WINDOW_BACKGROUND | NK_WINDOW_BORDER)) {
             float play_height = ((float)keyboard.h / keyboard.w) *
-                                    nk_layout_space_bounds(ctx).w;
+                                nk_layout_space_bounds(ctx).w;
 
             nk_layout_row_dynamic(ctx, play_height, 1);
             nk_image(ctx, play);
@@ -249,10 +241,30 @@ class MenuScene final : public Scene {
             nk_group_end(ctx);
           }
 
+          if (nk_group_begin(ctx, "Time Trials",
+                             NK_WINDOW_BACKGROUND | NK_WINDOW_BORDER)) {
+            float play_height =
+                ((float)play.h / play.w) * nk_layout_space_bounds(ctx).w;
+            nk_layout_row_dynamic(ctx, play_height, 1);
+            nk_image(ctx, play);
+
+            nk_layout_row_dynamic(ctx, (height - play_height) - 60, 1);
+
+            nk_label(ctx, "Beat the laps with the fastest time.",
+                     NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_CENTERED);
+
+            nk_layout_row_dynamic(ctx, 50, 1);
+            if (nk_button_label(ctx, "Pick")) {
+              state.gamemode = ProgramState::GAMEMODE_ARCADE_TIME;
+              state.screen = ProgramState::SCREEN_GAME;
+            }
+            nk_group_end(ctx);
+          }
+
           if (nk_group_begin(ctx, "Shovel Mode",
                              NK_WINDOW_BACKGROUND | NK_WINDOW_BORDER)) {
-            float shovel_height = ((float)shovel.h / shovel.w) *
-                                    nk_layout_space_bounds(ctx).w;
+            float shovel_height =
+                ((float)shovel.h / shovel.w) * nk_layout_space_bounds(ctx).w;
             nk_layout_row_dynamic(ctx, shovel_height, 1);
             nk_image(ctx, shovel);
 
@@ -297,8 +309,8 @@ class SceneManager {
     rlEnableColorBlend();
     rlSetBlendMode(RL_BLEND_ALPHA);
 
-    shader = LoadShader((Constants::release_folder + "lighting.vs").c_str(),
-                        (Constants::release_folder + "lighting.fs").c_str());
+    shader = LoadShader(RELEASE_FOLDER("lighting.vs"),
+                        RELEASE_FOLDER("lighting.fs"));
 #ifdef PLATFORM_WEB
     SetTraceLogLevel(LOG_ERROR);
 #endif
@@ -323,6 +335,8 @@ class SceneManager {
 
   bool step() {
     switch (state.screen) {
+      case ProgramState::SCREEN_GAME_MODE:
+        [[fallthrough]];
       case ProgramState::SCREEN_CONTROL:
         [[fallthrough]];
       case ProgramState::SCREEN_MAIN_MENU:

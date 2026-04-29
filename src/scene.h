@@ -82,7 +82,20 @@ class GameScene final : public Scene {
   float speed_modifier = 1;  // slowmode stuff
 
   // time trials
-  bool time_trials = false;
+  // FOXMOSS: Tell oliver about this
+float time_trial_selected = 0;
+float time_trial_target = 0;
+float tt_target_dist;
+std::vector<JPH::Vec3> tt_teleport_location = {{0, 0.1, 3.2}};
+std::vector<float> tt_teleport_rotation = {270};
+std::vector<std::vector<Vector3>> time_trials{
+    {{5.87, 0, 2.68}, // time_trials[0] is the loop around the field
+     {5.87, 0, -2.68},
+     {-5.87, 0, -2.68},
+     {-5.87, 0, 2.68}},
+};
+// (for robot position) field domain is [-7.83, 7.83], field range is
+// [-3.57, 3.57]
   float start_time = GetTime();
 
   // shovel

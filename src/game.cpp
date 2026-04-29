@@ -2,9 +2,13 @@
 // on top
 
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <format>
+#include <vector>
 
+#include "Jolt/Math/MathTypes.h"
+#include "Jolt/Math/Quat.h"
 #include "Jolt/Math/Real.h"
 #include "Jolt/Math/Vec3.h"
 #include "Jolt/Physics/EActivation.h"
@@ -13,11 +17,9 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "scene.h"
+
 GameScene::GameScene(ProgramState& program_state, Shader& shader)
     : Scene(program_state), shader(shader), jolt(shader) {
-  time_trials = true;  // delete this later and make a function to enable time
-                       // trials ingame
-
   camera.position = Vector3{0.0f, 5.0f, 5.0f};  // Camera position
   camera.target = Vector3{0.0f, 0.0f, 0.0f};    // Camera looking at point
   camera.up =
@@ -87,9 +89,20 @@ GameScene::GameScene(ProgramState& program_state, Shader& shader)
   jolt.physics_system.OptimizeBroadPhase();
 
   int font_size = 20;
-  font = LoadFontEx((Constants::release_folder + "Lato-Regular.ttf").c_str(),
-                    20, NULL, 0);
+  font = LoadFontEx(RELEASE_FOLDER("Lato-Regular.ttf"), 20, NULL, 0);
   ctx = InitNuklearEx(font, font_size);
+
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+    // FOXMOSS: Tell oliver about this
+    start_time = GetTime();
+    time_trial_selected = 0;
+    time_trial_target = 0;
+    jolt.get_interface().SetPositionAndRotation(
+        player_id, JPH::RVec3Arg(tt_teleport_location[time_trial_selected]),
+        JPH::QuatArg::sEulerAngles(JPH::Vec3(
+            0, tt_teleport_rotation[time_trial_selected] * DEG2RAD, 0)),
+        JPH::EActivation::Activate);
+  }
 }
 
 void GameScene::step() {
@@ -151,16 +164,22 @@ void GameScene::game_step() {
   // if (state.gamemode == ProgramState::GAMEMODE_SANDBOX) {
   if (IsKeyPressed(KEY_ONE)) {
     camera_index = 0;
+    EnableCursor();
   } else if (IsKeyPressed(KEY_TWO)) {
     camera_index = 1;
+    EnableCursor();
   } else if (IsKeyPressed(KEY_THREE)) {
     camera_index = 2;
+    EnableCursor();
   } else if (IsKeyPressed(KEY_FOUR)) {
     camera_index = 3;
+    EnableCursor();
   } else if (IsKeyPressed(KEY_NINE)) {
     camera_index = 11;
+    DisableCursor();
   } else if (IsKeyPressed(KEY_ZERO)) {
     camera_index = 10;
+    EnableCursor();
   }
   //}
 
@@ -186,21 +205,21 @@ void GameScene::game_step() {
     };
   }
 
-  // if (state.gamemode == ProgramState::GAMEMODE_SANDBOX) {
-  if (camera_index == 11) {
-    UpdateCamera(&camera, CAMERA_FREE);
-  } else {
-  }
+  if (state.gamemode == ProgramState::GAMEMODE_SANDBOX) {
+    if (camera_index == 11) {
+      UpdateCamera(&camera, CAMERA_FREE);
+    } else {
+    }
 
-  if (IsKeyDown(KEY_LEFT_SHIFT) && camera_index == 11) {
-    camera.position.y -= 0.19;
-    camera.target.y -= 0.19;
+    if (IsKeyDown(KEY_LEFT_SHIFT) && camera_index == 11) {
+      camera.position.y -= 0.19;
+      camera.target.y -= 0.19;
+    }
   }
 
   if (IsKeyPressed(KEY_P)) {
     debug = !debug;
   }
-  //}
 
   player_velocity = Vector3Zero();
   player_rot_velocity = 0;
@@ -225,8 +244,8 @@ void GameScene::game_step() {
 
   if (std::abs(controller_info.joystick_axis[2]) >
       Constants::CONTROLER_DEADBAND) {
-    player_rot_velocity -=
-        std::pow(controller_info.joystick_axis[2], 3.0) * 3 * speed_modifier;
+    player_rot_velocity -= std::pow(controller_info.joystick_axis[2], 3.0) * 3 *
+                           speed_modifier * 4;
   }
 
   if (controller_info.joystick_inputs[4] &&
@@ -376,25 +395,51 @@ void GameScene::game_draw() {
     DrawModel(jolt.convex_model, {}, 1.0f, WHITE);
 
   EndShaderMode();
+
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+    tt_target_dist = Vector3Distance(
+        {player_pos.GetX(), player_pos.GetY(), player_pos.GetZ()},
+        time_trials[time_trial_selected][time_trial_target]);
+    DrawCylinder(time_trials[time_trial_selected][time_trial_target], 0.8, 0.8,
+                 0.1, 15, GREEN);
+    if (tt_target_dist < 0.7 &&
+        time_trial_target != time_trials[time_trial_selected].size() - 1) {
+      time_trial_target++;
+    } else if (tt_target_dist < 0.7 &&
+               time_trial_target ==
+                   time_trials[time_trial_selected].size() - 1) {
+      // TODO: replace with score flow
+      paused = true;
+      printf("Completed Trial with a time of %.2f seconds\n",
+             GetTime() - start_time);
+      // will add a visual thing later and more stuff
+    }
+  }
   EndMode3D();
   EndBlendMode();
 
-  if (debug) {
+  if (debug && state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
     DrawFPS(10, 10);
 
     DrawText(  // displaying coordinates of the robot on the field
-        TextFormat("X: %f, Z: %f\n", player_pos.GetX(), player_pos.GetZ()), 10,
-        420, 20, ORANGE);
-  }
+        TextFormat("X: %f, Y: %f, Z: %f\n", player_pos.GetX(),
+                   player_pos.GetY(), player_pos.GetZ()),
+        10, 40, 20, ORANGE);
+  } else if (debug && state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+    DrawFPS(10, 70);
 
-  if (IsKeyPressed(KEY_T)) {
-    start_time = GetTime();
+    DrawText(  // displaying coordinates of the robot on the field
+        TextFormat("X: %f, Z: %f\n", player_pos.GetX(), player_pos.GetZ()), 10,
+        100, 20, ORANGE);
   }
 
   if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
     DrawText(  // displaying the timer for the time trials
-        TextFormat("Time: %.2f", ((GetTime() - start_time))), 10, 40, 20,
+        TextFormat("Time: %.2f", ((GetTime() - start_time))), 10, 10, 20,
         SKYBLUE);
+    DrawText(  // displaying the timer for the time trials
+        TextFormat("Trial Target Dist: %f\n", tt_target_dist), 10, 40, 20,
+        ORANGE);
   }
 
   controller_info.draw(state.input);

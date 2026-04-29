@@ -17,10 +17,8 @@ constexpr float CONTROLER_DEADBAND = 0.01;
 constexpr float BALL_RADIUS = 0.075;
 
 #ifdef PLATFORM_WEB
-constexpr std::string release_folder = "release/";
 #define RELEASE_FOLDER(value)  "release/" value
 #else
-constexpr std::string release_folder = "../release/";
 #define RELEASE_FOLDER(value)  "../release/" value
 #endif
 
