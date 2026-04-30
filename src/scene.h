@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <sys/_types/_size_t.h>
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
@@ -55,10 +56,7 @@ struct ProgramState {
     GAMEMODE_SANDBOX,
   } gamemode = GAMEMODE_SANDBOX;
 
-  enum TimeTrial {
-    TRIAL_LOOP,
-    TRIAL_EIGHT
-  } time_trial_selected;
+  enum TimeTrial { TRIAL_LOOP, TRIAL_EIGHT } time_trial_selected;
   InputMethod input = INPUT_KEYBOARD;
 };
 
@@ -68,7 +66,7 @@ protected:
 
 public:
   // time trials stuff that needed to be public
-  void selectTimeTrial(enum::ProgramState::TimeTrial time_trial_id) {
+  void selectTimeTrial(enum ::ProgramState::TimeTrial time_trial_id) {
     state.time_trial_selected = time_trial_id;
     state.gamemode = ProgramState::GAMEMODE_ARCADE_TIME;
     state.screen = ProgramState::SCREEN_GAME;
@@ -99,9 +97,9 @@ private:
   char submit_email[256] = "name@domain.com";
   bool submit_email_changed = false;
 
-  float time_trials_leaderboard_time;
-
   // time trials
+  float time_trials_stopwatch;
+  float time_trials_leaderboard_time;
   float time_trial_target;
   float tt_target_dist;
   std::vector<JPH::Vec3> tt_teleport_location = {{0, 0.1, 3.2}, {0, 0.1, 3.2}};

@@ -186,8 +186,14 @@ void GameScene::step() {
             ctx,
             std::format("You scored an {} on Shovel.", shovel_score).c_str(),
             NK_TEXT_CENTERED);
-      } else if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
-        nk_label(ctx, std::format("You completed the trial in %f seconds", time_trials_leaderboard_time).c_str(),
+      } else if (state.gamemode ==
+                 ProgramState::GAMEMODE_SANDBOX) { // Time Trial Completion
+        // has to check for sandbox as I change it to that when you finish a
+        // time trial
+        nk_label(ctx,
+                 std::format("You completed the trial in {:.2f} seconds",
+                             time_trials_stopwatch)
+                     .c_str(),
                  NK_TEXT_CENTERED);
       }
 
@@ -410,6 +416,16 @@ void GameScene::draw() {
                {GetScreenWidth() / 2.0f - text_size.x / 2.0f, 10 + text_size.y},
                30, 1.0, WHITE);
   }
+  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+    time_trials_stopwatch = GetTime() - start_time;
+    auto time_str =
+        std::format("{:02.0f}:{:02.0f}", std::roundf(time_trials_stopwatch),
+                    std::fmod((time_trials_stopwatch), 1.0) * 100);
+    auto text_size = MeasureTextEx(segment_font, time_str.c_str(), 80, 1.0);
+    DrawTextEx(segment_font, time_str.c_str(),
+               {GetScreenWidth() / 2.0f - text_size.x / 2.0f, 10}, 80, 1.0,
+               WHITE);
+  }
 
   if (paused && state.screen == ProgramState::SCREEN_GAME) {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), {0, 0, 0, 100});
@@ -521,8 +537,7 @@ void GameScene::game_draw() {
                time_trial_target ==
                    time_trials[state.time_trial_selected].size() - 1) {
       state.screen = ProgramState::SCREEN_SCORE_SUBMIT;
-      time_trials_leaderboard_time = std::round(((GetTime() - start_time) * 100) / 100);
-      printf("Completed Trial with a time of %.2f seconds\n", GetTime() - start_time);
+      /* printf("Completed Trial with a time of %.2f seconds\n", time_trials_stopwatch); */
       state.gamemode = ProgramState::GAMEMODE_SANDBOX;
     }
   }
@@ -536,21 +551,11 @@ void GameScene::game_draw() {
         TextFormat("X: %f, Y: %f, Z: %f\n", player_pos.GetX(),
                    player_pos.GetY(), player_pos.GetZ()),
         10, 40, 20, ORANGE);
-  } else if (debug) {
-    DrawFPS(10, 70);
-
-    DrawText( // displaying coordinates of the robot on the field
-        TextFormat("X: %f, Z: %f\n", player_pos.GetX(), player_pos.GetZ()), 10,
-        100, 20, ORANGE);
-  }
-
-  if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
-    DrawText( // displaying the timer for the time trials
-        TextFormat("Time: %.2f", ((GetTime() - start_time))), 10, 10, 20,
-        SKYBLUE);
-    DrawText( // displaying the timer for the time trials
-        TextFormat("Trial Target Dist: %f\n", tt_target_dist), 10, 40, 20,
-        ORANGE);
+    if (state.gamemode == ProgramState::GAMEMODE_ARCADE_TIME) {
+      DrawText( // displaying the timer for the time trials
+          TextFormat("Trial Target Dist: %f\n", tt_target_dist), 10, 70, 20,
+          ORANGE);
+    }
   }
 
   controller_info.draw(state.input);
