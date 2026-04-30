@@ -1,6 +1,5 @@
 #include <cinttypes>
 #include <memory>
-#include <sys/_types/_time_t.h>
 
 #include "config.h"
 #include "control.h"

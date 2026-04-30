@@ -2,7 +2,7 @@
 
 ## Play
 
-Web builds are automatically uploaded to [team248.org/simulator/](https://team248.org/simulator/) and [team-2480.github.io/BagelSim/](https://team-2480.github.io/BagelSim/)
+Web builds are automatically uploaded to [team2480.org/simulator/](https://team2480.org/simulator/) and [team-2480.github.io/BagelSim/](https://team-2480.github.io/BagelSim/)
 
 ![](screenshot.png)
 
